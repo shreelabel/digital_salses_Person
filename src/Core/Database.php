@@ -54,6 +54,17 @@ final class Database
         return self::$pdo;
     }
 
+    public static function isConnectionLost(\Throwable $e): bool
+    {
+        $msg = $e->getMessage();
+        return str_contains($msg, '2006') ||
+               str_contains($msg, '2013') ||
+               stripos($msg, 'gone away') !== false ||
+               stripos($msg, 'Lost connection') !== false ||
+               stripos($msg, 'server closed the connection') !== false ||
+               stripos($msg, 'Packets out of order') !== false;
+    }
+
     /** Test whether the database + tables are ready. */
     public static function isReady(): bool
     {
@@ -67,9 +78,19 @@ final class Database
 
     public static function query(string $sql, array $params = []): PDOStatement
     {
-        $stmt = self::pdo()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt;
+        try {
+            $stmt = self::pdo()->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            if (self::isConnectionLost($e)) {
+                self::$pdo = null; // force fresh reconnection
+                $stmt = self::pdo()->prepare($sql);
+                $stmt->execute($params);
+                return $stmt;
+            }
+            throw $e;
+        }
     }
 
     public static function fetch(string $sql, array $params = []): ?array
@@ -103,17 +124,22 @@ final class Database
         $maxRetries = 5;
         while ($maxRetries > 0) {
             try {
-                self::query($sql, $data);
-                return (int) self::pdo()->lastInsertId();
+                $pdo = self::pdo();
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($data);
+                return (int) $pdo->lastInsertId();
             } catch (\PDOException $e) {
-                if (self::autoHealMissingColumn($table, $e)) {
+                if (self::isConnectionLost($e)) {
+                    self::$pdo = null;
+                    $maxRetries--;
+                } elseif (self::autoHealMissingColumn($table, $e)) {
                     $maxRetries--;
                 } else {
                     throw $e;
                 }
             }
         }
-        return (int) self::pdo()->lastInsertId();
+        return 0;
     }
 
     public static function update(string $table, int $id, array $data): int
@@ -128,9 +154,15 @@ final class Database
         $maxRetries = 5;
         while ($maxRetries > 0) {
             try {
-                return self::query($sql, $data)->rowCount();
+                $pdo = self::pdo();
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($data);
+                return $stmt->rowCount();
             } catch (\PDOException $e) {
-                if (self::autoHealMissingColumn($table, $e)) {
+                if (self::isConnectionLost($e)) {
+                    self::$pdo = null;
+                    $maxRetries--;
+                } elseif (self::autoHealMissingColumn($table, $e)) {
                     $maxRetries--;
                 } else {
                     throw $e;
