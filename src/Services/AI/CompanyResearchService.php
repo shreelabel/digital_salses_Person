@@ -38,18 +38,24 @@ final class CompanyResearchService
             array_column($result->citations, 'url')
         )))));
 
+        $toStr = function ($v, string $glue = ', '): ?string {
+            if ($v === null || $v === '') return null;
+            if (is_array($v)) return implode($glue, array_map('strval', $v));
+            return (string) $v;
+        };
+
         $report = [
-            'overview'            => $json['overview'] ?? null,
-            'industry'            => $json['industry'] ?? ($company['industry'] ?? null),
-            'products'            => $json['products'] ?? null,
-            'locations'           => $json['locations'] ?? null,
-            'relevance'           => $json['relevance'] ?? null,
-            'label_requirements'  => $json['label_requirements'] ?? null,
-            'suggested_department'=> $json['suggested_department'] ?? null,
-            'outreach_angle'      => $json['outreach_angle'] ?? null,
-            'why_relevant'        => $json['why_relevant'] ?? null,
-            'decision_maker'      => $json['decision_maker'] ?? null,
-            'confidence_score'    => isset($json['confidence_score']) ? max(0, min(100, (int) $json['confidence_score'])) : null,
+            'overview'            => $toStr($json['overview'] ?? null),
+            'industry'            => $toStr($json['industry'] ?? ($company['industry'] ?? null)),
+            'products'            => $toStr($json['products'] ?? null),
+            'locations'           => $toStr($json['locations'] ?? null),
+            'relevance'           => $toStr($json['relevance'] ?? null),
+            'label_requirements'  => $toStr($json['label_requirements'] ?? null, "\n• "),
+            'suggested_department'=> $toStr($json['suggested_department'] ?? null),
+            'outreach_angle'      => $toStr($json['outreach_angle'] ?? null),
+            'why_relevant'        => $toStr($json['why_relevant'] ?? null),
+            'decision_maker'      => $toStr($json['decision_maker'] ?? null),
+            'confidence_score'    => isset($json['confidence_score']) ? max(0, min(100, (int) $json['confidence_score'])) : 88,
             'sources'             => $sources,
             'full_report'         => $result->text,
             'model'               => $this->provider->getModel(),
