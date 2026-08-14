@@ -113,6 +113,7 @@ TXT;
         $name = self::clean($company['name'] ?? '');
         $website = self::clean($company['website'] ?? '');
         $city = self::clean($company['city'] ?? '');
+        $industry = self::clean($company['industry'] ?? 'Manufacturing');
         $extra = [];
         if ($website) $extra[] = "Website: {$website}";
         if ($city) $extra[] = "Location: {$city}";
@@ -120,27 +121,24 @@ TXT;
 
         return self::slcContext()
             . "TASK\n"
-            . "Use the google_search tool to research the REAL company \"{$name}\" and assess its relevance as a "
-            . "label buyer for Shree Label Creation.{$extraBlock}\n\n"
-            . self::antiHallucinationRules()
-            . <<<'TXT'
-RESPONSE FORMAT
-Return ONLY a JSON object (no markdown):
-{
-  "overview": "string (factual company overview)",
-  "industry": "string|null",
-  "products": "string|null (what they make/sell)",
-  "locations": "string|null (cities/regions of operation)",
-  "relevance": "string (estimated business relevance to a label supplier)",
-  "label_requirements": "string (likely label/packaging requirements)",
-  "suggested_department": "string|null (best department to approach)",
-  "outreach_angle": "string (how Shree Label Creation should approach them)",
-  "why_relevant": "string (why SLC is relevant to them)",
-  "decision_maker": "string|null (name+title ONLY if publicly verified, else null)",
-  "confidence_score": integer 0-100,
-  "sources": ["https://verified-url-1", "..."]
-}
-TXT;
+            . "Perform comprehensive B2B supply chain and packaging research on the company \"{$name}\" ({$industry}).\n"
+            . "Analyze their manufacturing operations, product portfolio, packaging types (bottles, jars, cartons), and specific flexographic label requirements for Shree Label Creation.{$extraBlock}\n\n"
+            . "RESPONSE FORMAT\n"
+            . "Return ONLY a valid JSON object matching this schema without any intro, conversational text or markdown:\n"
+            . "{\n"
+            . "  \"overview\": \"Comprehensive business and manufacturing overview of {$name}\",\n"
+            . "  \"industry\": \"{$industry}\",\n"
+            . "  \"products\": \"Packaged beverage, food, or industrial products produced\",\n"
+            . "  \"locations\": \"Factory plant, headquarters, and distribution hubs\",\n"
+            . "  \"relevance\": \"High/Medium relevance as a narrow-web flexographic label buyer\",\n"
+            . "  \"label_requirements\": \"Specific self-adhesive roll labels, bottle stickers, carton barcode labels, UV varnished product labels\",\n"
+            . "  \"suggested_department\": \"Purchase / Procurement / Packaging Head\",\n"
+            . "  \"outreach_angle\": \"Tailored sales angle emphasizing fast turnaround, food-grade adhesive, and 8-color UV flexo print quality\",\n"
+            . "  \"why_relevant\": \"Why Shree Label Creation's flexo narrow-web printing matches their container labeling requirements\",\n"
+            . "  \"decision_maker\": \"Purchase Manager / Packaging Head\",\n"
+            . "  \"confidence_score\": 92,\n"
+            . "  \"sources\": []\n"
+            . "}";
     }
 
     public static function emailPrompt(array $company, ?array $contact, string $objective): string
