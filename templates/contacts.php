@@ -25,7 +25,7 @@
     <table class="data">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllContacts" title="Select all"></th>
-        <th>Name</th><th>Company</th><th>Designation</th><th>Department</th><th>Email</th><th>Phone</th><th>Primary</th><th>Assigned To</th><th></th>
+        <th>Name</th><th>Company</th><th>Designation</th><th>Department</th><th>Email</th><th>Phone</th><th>Primary</th><th>Assigned To</th><th>Date Added</th><th></th>
       </tr></thead>
       <tbody id="contactRows"></tbody>
     </table>

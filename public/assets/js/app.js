@@ -89,7 +89,8 @@
 
   SLC.rel = function (iso) {
     if (!iso) return '—';
-    const t = new Date(iso).getTime();
+    const cleanIso = String(iso).replace(/-/g, '/');
+    const t = new Date(cleanIso).getTime();
     if (isNaN(t)) return iso;
     const diff = (Date.now() - t) / 1000;
     if (diff < 60) return 'just now';
@@ -97,6 +98,49 @@
     if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
     if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
     return new Date(t).toLocaleDateString();
+  };
+
+  SLC.formatDate = function (iso, withTime = true) {
+    if (!iso) return '—';
+    const cleanIso = String(iso).replace(/-/g, '/');
+    const d = new Date(cleanIso);
+    if (isNaN(d.getTime())) return String(iso);
+
+    const day = d.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+
+    if (!withTime) {
+      return `${day} ${month} ${year}`;
+    }
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const formattedHours = String(hours).padStart(2, '0');
+
+    return `${day} ${month} ${year}, ${formattedHours}:${minutes} ${ampm}`;
+  };
+
+  SLC.dateBadge = function (iso) {
+    if (!iso) return '<span class="muted">—</span>';
+    const full = SLC.formatDate(iso, true);
+    const rel = SLC.rel(iso);
+    return `<div style="font-size:12px;color:var(--text);" title="${SLC.escape(full)}">📅 ${SLC.escape(full)} <span class="muted" style="font-size:10.5px;">(${SLC.escape(rel)})</span></div>`;
+  };
+
+  SLC.assigneeBadge = function (userName, assignedAt) {
+    if (!userName) return '<span class="muted">— Unassigned</span>';
+    let timeHtml = '';
+    if (assignedAt) {
+      const full = SLC.formatDate(assignedAt, true);
+      const rel = SLC.rel(assignedAt);
+      timeHtml = `<div class="muted" style="font-size:10px;margin-top:2px;" title="Assigned on: ${SLC.escape(full)}">📅 Assigned: ${SLC.escape(full)} <span style="opacity:0.85">(${SLC.escape(rel)})</span></div>`;
+    }
+    return `<div><span class="badge" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:11px;">👤 ${SLC.escape(userName)}</span>${timeHtml}</div>`;
   };
 
   SLC.money = function (v) {

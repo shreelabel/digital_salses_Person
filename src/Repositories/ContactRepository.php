@@ -20,7 +20,7 @@ class ContactRepository extends BaseRepository
     {
         $allowed = [
             'company_id', 'name', 'designation', 'department', 'email', 'phone',
-            'mobile', 'linkedin_url', 'is_decision_maker', 'is_primary', 'importance', 'notes', 'source', 'assigned_to',
+            'mobile', 'linkedin_url', 'is_decision_maker', 'is_primary', 'importance', 'notes', 'source', 'assigned_to', 'assigned_at',
         ];
         $out = [];
         foreach ($allowed as $k) {
@@ -33,8 +33,15 @@ class ContactRepository extends BaseRepository
                 $out[$bool] = in_array((string) $out[$bool], ['1', 'true', 'on'], true) ? 1 : 0;
             }
         }
-        if (isset($out['assigned_to']) && $out['assigned_to'] !== null) {
-            $out['assigned_to'] = (int) $out['assigned_to'];
+        if (array_key_exists('assigned_to', $out)) {
+            if ($out['assigned_to'] !== null && $out['assigned_to'] !== '') {
+                $out['assigned_to'] = (int) $out['assigned_to'];
+                if (empty($out['assigned_at'])) {
+                    $out['assigned_at'] = date('Y-m-d H:i:s');
+                }
+            } else {
+                $out['assigned_at'] = null;
+            }
         }
         return $out;
     }

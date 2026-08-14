@@ -170,10 +170,10 @@ abstract class BaseRepository
         if (empty($cleanIds) || $assignedToUserId <= 0) {
             return 0;
         }
-        $placeholders = implode(',', array_fill(0, count($cleanIds), '?'));
-        $params = array_merge([$assignedToUserId], $cleanIds);
+        $now = date('Y-m-d H:i:s');
+        $params = array_merge([$assignedToUserId, $now], $cleanIds);
         return Database::query(
-            "UPDATE {$this->table} SET assigned_to = ? WHERE id IN ({$placeholders}) AND {$this->scope()}",
+            "UPDATE {$this->table} SET assigned_to = ?, assigned_at = ? WHERE id IN ({$placeholders}) AND {$this->scope()}",
             $params
         )->rowCount();
     }

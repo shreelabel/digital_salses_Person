@@ -81,8 +81,8 @@
         '<td>' + SLC.ui.scoreBar(c.ai_score) + '</td>' +
         '<td>' + SLC.ui.priorityBadge(c.ai_priority) + '</td>' +
         '<td><span class="muted">' + SLC.escape(c.source || 'Manual') + '</span></td>' +
-        '<td><span class="badge" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;">👤 ' + SLC.escape(c.assigned_user_name || 'Admin') + '</span></td>' +
-        '<td class="muted">' + SLC.rel(c.created_at) + '</td>' +
+        '<td>' + SLC.assigneeBadge(c.assigned_user_name, c.assigned_at) + '</td>' +
+        '<td>' + SLC.dateBadge(c.created_at) + '</td>' +
         '<td style="text-align:right"><button class="btn-icon btn-sm" data-edit="' + c.id + '" title="Edit">✏️</button> <button class="btn-icon btn-sm" data-del="' + c.id + '" title="Delete">🗑️</button></td>' +
         '</tr>'
       ).join('') : '<tr><td colspan="10">' + SLC.ui.empty('No companies yet', 'Add one or run AI Lead Finder.') + '</td></tr>';

@@ -23,7 +23,7 @@ class LeadRepository extends BaseRepository
     {
         $allowed = [
             'company_id', 'contact_id', 'title', 'industry', 'location', 'status', 'priority',
-            'ai_score', 'estimated_value', 'source', 'notes', 'import_batch_id', 'raw_data', 'next_followup_at', 'assigned_to',
+            'ai_score', 'estimated_value', 'source', 'notes', 'import_batch_id', 'raw_data', 'next_followup_at', 'assigned_to', 'assigned_at',
         ];
         $out = [];
         foreach ($allowed as $k) {
@@ -37,8 +37,15 @@ class LeadRepository extends BaseRepository
         if (array_key_exists('ai_score', $out) && $out['ai_score'] !== null) {
             $out['ai_score'] = max(0, min(100, (int) $out['ai_score']));
         }
-        if (array_key_exists('assigned_to', $out) && $out['assigned_to'] !== null) {
-            $out['assigned_to'] = (int) $out['assigned_to'];
+        if (array_key_exists('assigned_to', $out)) {
+            if ($out['assigned_to'] !== null && $out['assigned_to'] !== '') {
+                $out['assigned_to'] = (int) $out['assigned_to'];
+                if (empty($out['assigned_at'])) {
+                    $out['assigned_at'] = date('Y-m-d H:i:s');
+                }
+            } else {
+                $out['assigned_at'] = null;
+            }
         }
         return $out;
     }

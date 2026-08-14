@@ -103,8 +103,8 @@
           '<td>' + SLC.ui.priorityBadge(l.priority) + '</td>' +
           '<td>' + SLC.ui.scoreBar(l.ai_score) + '</td>' +
           '<td>' + SLC.money(l.estimated_value) + '</td>' +
-          '<td><span class="badge" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;">👤 ' + SLC.escape(l.assigned_user_name || 'Admin') + '</span></td>' +
-          '<td class="muted">' + (l.next_followup_at ? SLC.rel(l.next_followup_at) : '—') + '</td>' +
+          '<td>' + SLC.assigneeBadge(l.assigned_user_name, l.assigned_at) + '</td>' +
+          '<td>' + (l.next_followup_at ? SLC.dateBadge(l.next_followup_at) : ('<div class="muted" style="font-size:11px;" title="Created at: ' + SLC.escape(SLC.formatDate(l.created_at)) + '">📅 ' + SLC.escape(SLC.formatDate(l.created_at, false)) + ' <span style="font-size:10px;">(' + SLC.escape(SLC.rel(l.created_at)) + ')</span></div>')) + '</td>' +
           '<td style="text-align:right">' + apolloAction + '<button class="btn-icon btn-sm" data-edit="' + l.id + '" title="Edit">✏️</button> <button class="btn-icon btn-sm" data-del="' + l.id + '" title="Delete">🗑️</button></td>' +
           '</tr>';
       }).join('') : '<tr><td colspan="10">' + SLC.ui.empty('No leads yet', '') + '</td></tr>';

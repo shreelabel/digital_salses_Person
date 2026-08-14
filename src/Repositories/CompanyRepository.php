@@ -20,7 +20,7 @@ class CompanyRepository extends BaseRepository
     {
         $allowed = [
             'name', 'industry', 'sub_industry', 'city', 'state', 'country', 'website',
-            'phone', 'email', 'employee_count', 'description', 'ai_score', 'ai_priority', 'source', 'assigned_to',
+            'phone', 'email', 'employee_count', 'description', 'ai_score', 'ai_priority', 'source', 'assigned_to', 'assigned_at',
         ];
         $out = [];
         foreach ($allowed as $k) {
@@ -31,8 +31,15 @@ class CompanyRepository extends BaseRepository
         if (isset($out['ai_score']) && $out['ai_score'] !== null) {
             $out['ai_score'] = max(0, min(100, (int) $out['ai_score']));
         }
-        if (isset($out['assigned_to']) && $out['assigned_to'] !== null) {
-            $out['assigned_to'] = (int) $out['assigned_to'];
+        if (array_key_exists('assigned_to', $out)) {
+            if ($out['assigned_to'] !== null && $out['assigned_to'] !== '') {
+                $out['assigned_to'] = (int) $out['assigned_to'];
+                if (empty($out['assigned_at'])) {
+                    $out['assigned_at'] = date('Y-m-d H:i:s');
+                }
+            } else {
+                $out['assigned_at'] = null;
+            }
         }
         return $out;
     }

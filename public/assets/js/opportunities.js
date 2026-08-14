@@ -45,8 +45,7 @@
         '<td>' + SLC.escape(o.company_name || '—') + '</td>' +
         '<td>' + SLC.ui.statusBadge(o.stage === 'Prospecting' ? 'New' : o.stage === 'Won' ? 'Won' : o.stage === 'Lost' ? 'Lost' : 'Contacted') + '</td>' +
         '<td>' + SLC.money(o.amount) + '</td>' +
-        '<td>' + (o.probability ?? 0) + '%</td>' +
-        '<td class="muted">' + SLC.escape(o.expected_close_date || '—') + '</td>' +
+        '<td>' + (o.expected_close_date ? ('<div style="font-size:12px;font-weight:600;">📅 ' + SLC.escape(SLC.formatDate(o.expected_close_date, false)) + '</div>') : '<span class="muted">—</span>') + '</td>' +
         '<td style="text-align:right"><button class="btn-icon btn-sm" data-edit="' + o.id + '">✏️</button> <button class="btn-icon btn-sm" data-del="' + o.id + '">🗑️</button></td>' +
         '</tr>'
       ).join('') : '<tr><td colspan="8">' + SLC.ui.empty('No opportunities yet', '') + '</td></tr>';

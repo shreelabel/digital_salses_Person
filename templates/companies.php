@@ -27,7 +27,7 @@
     <table class="data">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllCompanies" title="Select all"></th>
-        <th>Company</th><th>Industry</th><th>Location</th><th>AI Score</th><th>Priority</th><th>Source</th><th>Assigned To</th><th>Added</th><th></th>
+        <th>Company</th><th>Industry</th><th>Location</th><th>AI Score</th><th>Priority</th><th>Source</th><th>Assigned To</th><th>Added Date</th><th></th>
       </tr></thead>
       <tbody id="companyRows"></tbody>
     </table>
