@@ -100,7 +100,19 @@ final class Database
             implode(', ', $cols),
             implode(', ', $placeholders)
         );
-        self::query($sql, $data);
+        $maxRetries = 5;
+        while ($maxRetries > 0) {
+            try {
+                self::query($sql, $data);
+                return (int) self::pdo()->lastInsertId();
+            } catch (\PDOException $e) {
+                if (self::autoHealMissingColumn($table, $e)) {
+                    $maxRetries--;
+                } else {
+                    throw $e;
+                }
+            }
+        }
         return (int) self::pdo()->lastInsertId();
     }
 
@@ -113,7 +125,42 @@ final class Database
         }
         $data['id'] = $id;
         $sql = sprintf('UPDATE %s SET %s WHERE id = :id', $table, implode(', ', $set));
-        return self::query($sql, $data)->rowCount();
+        $maxRetries = 5;
+        while ($maxRetries > 0) {
+            try {
+                return self::query($sql, $data)->rowCount();
+            } catch (\PDOException $e) {
+                if (self::autoHealMissingColumn($table, $e)) {
+                    $maxRetries--;
+                } else {
+                    throw $e;
+                }
+            }
+        }
+        return 0;
+    }
+
+    private static function autoHealMissingColumn(string $table, \PDOException $e): bool
+    {
+        if (preg_match("/Unknown column '([^']+)'/i", $e->getMessage(), $m)) {
+            $col = $m[1];
+            $def = match ($col) {
+                'assigned_at'        => 'DATETIME NULL DEFAULT NULL',
+                'assigned_to'        => 'INT UNSIGNED NULL DEFAULT NULL',
+                'raw_data'           => 'JSON NULL',
+                'apollo_account_id',
+                'apollo_contact_id',
+                'import_batch_id'    => 'VARCHAR(100) NULL',
+                default              => (str_ends_with($col, '_at') ? 'DATETIME NULL' : 'VARCHAR(255) NULL'),
+            };
+            try {
+                self::pdo()->exec("ALTER TABLE `{$table}` ADD COLUMN `{$col}` {$def}");
+                return true;
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+        return false;
     }
 
     public static function transaction(callable $fn): mixed

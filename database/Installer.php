@@ -49,20 +49,26 @@ final class Installer
         };
 
         $addCol('slc_companies', 'assigned_to', 'INT UNSIGNED NULL AFTER `id`');
+        $addCol('slc_companies', 'assigned_at', 'DATETIME NULL AFTER `assigned_to`');
         $addCol('slc_companies', 'apollo_account_id', 'VARCHAR(100) NULL AFTER `source`');
         $addCol('slc_companies', 'raw_data', 'JSON NULL AFTER `apollo_account_id`');
 
         $addCol('slc_contacts', 'assigned_to', 'INT UNSIGNED NULL AFTER `company_id`');
+        $addCol('slc_contacts', 'assigned_at', 'DATETIME NULL AFTER `assigned_to`');
         $addCol('slc_contacts', 'apollo_contact_id', 'VARCHAR(100) NULL AFTER `source`');
         $addCol('slc_contacts', 'raw_data', 'JSON NULL AFTER `apollo_contact_id`');
 
         $addCol('slc_leads', 'assigned_to', 'INT UNSIGNED NULL AFTER `company_id`');
+        $addCol('slc_leads', 'assigned_at', 'DATETIME NULL AFTER `assigned_to`');
         $addCol('slc_leads', 'import_batch_id', 'VARCHAR(64) NULL AFTER `notes`');
         $addCol('slc_leads', 'raw_data', 'JSON NULL AFTER `import_batch_id`');
 
         $addCol('slc_opportunities', 'assigned_to', 'INT UNSIGNED NULL AFTER `company_id`');
+        $addCol('slc_opportunities', 'assigned_at', 'DATETIME NULL AFTER `assigned_to`');
         $addCol('slc_followups', 'assigned_to', 'INT UNSIGNED NULL AFTER `company_id`');
+        $addCol('slc_followups', 'assigned_at', 'DATETIME NULL AFTER `assigned_to`');
         $addCol('slc_campaigns', 'assigned_to', 'INT UNSIGNED NULL AFTER `id`');
+        $addCol('slc_campaigns', 'assigned_at', 'DATETIME NULL AFTER `assigned_to`');
     }
 
     /** Connect WITHOUT a db name and CREATE DATABASE IF NOT EXISTS. */

@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS `slc_users` (
 -- ---------- 2. COMPANIES ----------
 CREATE TABLE IF NOT EXISTS `slc_companies` (
     `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `assigned_to`    INT UNSIGNED NULL DEFAULT NULL,
+    `assigned_at`    DATETIME     NULL DEFAULT NULL,
     `name`           VARCHAR(200) NOT NULL,
     `industry`       VARCHAR(120) NULL,
     `sub_industry`   VARCHAR(120) NULL,
@@ -62,6 +64,8 @@ CREATE TABLE IF NOT EXISTS `slc_companies` (
 CREATE TABLE IF NOT EXISTS `slc_contacts` (
     `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `company_id`        INT UNSIGNED NOT NULL,
+    `assigned_to`       INT UNSIGNED NULL DEFAULT NULL,
+    `assigned_at`       DATETIME     NULL DEFAULT NULL,
     `name`              VARCHAR(150) NOT NULL,
     `designation`       VARCHAR(150) NULL,
     `department`        VARCHAR(120) NULL,
@@ -91,6 +95,8 @@ CREATE TABLE IF NOT EXISTS `slc_leads` (
     `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `company_id`      INT UNSIGNED NOT NULL,
     `contact_id`      INT UNSIGNED NULL,
+    `assigned_to`     INT UNSIGNED NULL DEFAULT NULL,
+    `assigned_at`     DATETIME     NULL DEFAULT NULL,
     `title`           VARCHAR(200) NULL,
     `industry`        VARCHAR(120) NULL,
     `location`        VARCHAR(150) NULL,
