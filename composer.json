@@ -1,0 +1,34 @@
+{
+    "name": "shree-label-creation/slc-ai-sales",
+    "description": "SLC AI Sales Agent — AI-powered B2B sales intelligence & lead discovery for Shree Label Creation (narrow-web flexographic label manufacturer). Standalone PHP/MySQL app using its own slc_ai_sales database.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-mbstring": "*",
+        "ext-curl": "*",
+        "ext-openssl": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SLC\\": "src/"
+        },
+        "files": ["src/helpers.php"]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SLC\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --colors=always"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

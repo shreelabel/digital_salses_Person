@@ -1,0 +1,40 @@
+# SLC AI Sales Agent — Apache config
+# Place this at the project root (next to index.php).
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Compute the rewrite base automatically (works in subfolders).
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} ^(.*)$
+    RewriteRule ^(.*)$ index.php?r=$1 [QSA,L]
+</IfModule>
+
+# ---------- Security: protect sensitive paths ----------
+
+# Never serve the environment file or credentials
+<FilesMatch "^\.(env|git|gitignore|htaccess|htpasswd)">
+    Require all denied
+</FilesMatch>
+<Files ".env">
+    Require all denied
+</Files>
+
+# Block the source/config/storage directories from the web
+RewriteRule ^(src|config|database|storage|routes|tests|vendor)(/|$) - [F,L]
+
+# Block .sql files
+<FilesMatch "\.(sql|md|log)$">
+    Require all denied
+</FilesMatch>
+
+# Default charset
+AddDefaultCharset UTF-8
+
+# Basic security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "same-origin"
+</IfModule>

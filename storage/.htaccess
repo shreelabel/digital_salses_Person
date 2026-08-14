@@ -1,0 +1,2 @@
+# Deny all web access to storage contents (logs, caches, rate-limit files).
+Require all denied

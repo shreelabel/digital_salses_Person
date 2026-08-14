@@ -1,0 +1,25 @@
+# Secrets — NEVER commit
+.env
+storage/logs/*
+storage/framework/rate_limits/*
+!storage/logs/.gitkeep
+!storage/framework/.gitkeep
+
+# Dependencies & binaries
+vendor/
+node_modules/
+composer.phar
+
+# Scratch & temporary backups
+scratch/
+*.zip
+*.tar.gz
+shree_label_digital_sales_person_*/
+shree_label_backup_*.json
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
