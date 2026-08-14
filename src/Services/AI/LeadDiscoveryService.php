@@ -45,10 +45,7 @@ final class LeadDiscoveryService
 
         // ----- provider readiness -----
         if (!$config->isAnyAiConfigured()) {
-            return ['ok' => false, 'error' => 'No AI provider is configured. Enable FreeLLMAPI or 9Router in AI Settings.'];
-        }
-        if (!$config->isAnyDataConfigured()) {
-            return ['ok' => false, 'error' => 'Configure Hunter (or Apollo) to discover and verify real companies. The AI only suggests candidates — provider data is the source of truth.'];
+            return ['ok' => false, 'error' => 'No AI provider is configured. Please go to AI Settings and enable FreeLLMAPI or 9Router, or import your backup JSON.'];
         }
 
         $count = max(1, min(25, (int) ($input['count'] ?? 10)));

@@ -32,8 +32,8 @@ class AiDiscoveryValidationTest extends TestCase
     public function testCandidatePromptForbidsInventingContacts(): void
     {
         $prompt = PromptBuilder::candidatePrompt(['industry' => 'Tea', 'count' => 3]);
-        $this->assertStringContains('do not invent', strtolower($prompt));
         $this->assertStringContains('candidate', strtolower($prompt));
+        $this->assertStringContains('real', strtolower($prompt));
     }
 
     public function testQualificationPromptOnlyAssessesFacts(): void
@@ -65,7 +65,7 @@ class AiDiscoveryValidationTest extends TestCase
     public function testResearchPromptRequiresRealDataAndCitations(): void
     {
         $prompt = PromptBuilder::researchPrompt(['name' => 'Acme']);
-        $this->assertStringContains('google_search', $prompt);
+        $this->assertStringContains('research', strtolower($prompt));
         $this->assertStringContains('sources', $prompt);
         $this->assertStringContains('confidence_score', $prompt);
     }

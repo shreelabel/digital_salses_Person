@@ -46,7 +46,11 @@ class OpenAiCompatibleProvider implements AIProviderInterface
         $cfg = $this->config->get($this->slug);
         $key = $this->config->getKey($this->slug);
         $base = rtrim((string) $cfg?->baseUrl, '/');
-        $model = $cfg?->model ?: 'gpt-4o-mini';
+        $base = str_replace('freellmapis.com', 'freellmapi.com', $base);
+        if (empty($base)) {
+            $base = $this->slug === 'freellmapi' ? 'https://api.freellmapi.com/v1' : ($this->slug === '9router' ? 'https://api.9router.com/v1' : $base);
+        }
+        $model = $cfg?->model ?: ($this->slug === 'freellmapi' ? 'auto' : 'gpt-4o-mini');
 
         $url = $base . '/chat/completions';
         $body = [

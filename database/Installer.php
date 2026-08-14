@@ -147,7 +147,7 @@ final class Installer
             // slug,        name,          role,       base_url,                              model,           priority
             ['hunter',      'Hunter',      'discovery', 'https://api.hunter.io/v2',            null,            1],
             ['apollo',      'Apollo',      'enrichment','https://api.apollo.io/v1',            null,            2],
-            ['freellmapi',  'FreeLLMAPI',  'ai',        'https://api.freellmapis.com/v1',     'auto',          1],
+            ['freellmapi',  'FreeLLMAPI',  'ai',        'https://api.freellmapi.com/v1',      'auto',          1],
             ['9router',     '9Router',     'ai',        'https://api.9router.com/v1',         'gpt-4o-mini',   2],
             ['gemini',      'Gemini',      'ai',        'https://generativelanguage.googleapis.com/v1beta', 'gemini-3.6-flash', 3],
         ];
