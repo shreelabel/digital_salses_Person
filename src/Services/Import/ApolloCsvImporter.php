@@ -341,13 +341,14 @@ class ApolloCsvImporter
         $get = function (array $possibleKeys) use ($raw): string {
             foreach ($possibleKeys as $k) {
                 if (isset($raw[$k]) && trim((string)$raw[$k]) !== '') {
-                    return trim((string)$raw[$k]);
+                    $v = trim((string)$raw[$k]);
+                    return ltrim($v, "'");
                 }
             }
             // Case-insensitive fallback
             $lowerRaw = [];
             foreach ($raw as $rk => $rv) {
-                $lowerRaw[strtolower(trim($rk))] = trim((string)$rv);
+                $lowerRaw[strtolower(trim($rk))] = ltrim(trim((string)$rv), "'");
             }
             foreach ($possibleKeys as $k) {
                 $lk = strtolower(trim($k));
@@ -358,6 +359,12 @@ class ApolloCsvImporter
             return '';
         };
 
+        // Contact Emails (checked first for fallbacks)
+        $email = $get(['Email', 'email', 'Primary Email', 'Work Email', 'Contact Email', 'Secondary Email', 'Tertiary Email']);
+        $emailStatus = $get(['Email Status', 'email_status', 'Primary Email Status', 'Email Confidence']);
+        $emailCatchAll = $get(['Primary Email Catch-all Status', 'Catch-all Status', 'Catch All']);
+        $emailVerifiedAt = $get(['Primary Email Last Verified At', 'Email Last Verified At']);
+
         // Contact Names
         $firstName = $get(['First Name', 'First name', 'first_name', 'FirstName']);
         $lastName = $get(['Last Name', 'Last name', 'last_name', 'LastName']);
@@ -365,44 +372,60 @@ class ApolloCsvImporter
         if ($fullName === '' && ($firstName !== '' || $lastName !== '')) {
             $fullName = trim($firstName . ' ' . $lastName);
         }
-
-        // Job Title & Department
-        $jobTitle = $get(['Title', 'Job Title', 'Designation', 'title', 'job_title', 'Role']);
-        $seniority = $get(['Seniority', 'seniority', 'Level']);
-        $departments = $get(['Departments', 'Department', 'department', 'departments']);
-        $subDepartments = $get(['Sub Departments', 'sub_departments', 'Sub Department']);
-
-        // Company
-        $companyName = $get(['Company Name', 'Company', 'Company Name for Emails', 'company_name', 'Account Name', 'Organization']);
-        $companyWebsite = $get(['Website', 'Company Website', 'website', 'company_website', 'Domain']);
-        $industry = $get(['Industry', 'industry', 'Company Industry', 'Sector']);
-        $employeeCount = $get(['# Employees', 'Employees', 'employee_count', 'Company Size', 'Number of Employees']);
-        $annualRevenue = $get(['Annual Revenue', 'Revenue', 'annual_revenue']);
-        $technologies = $get(['Technologies', 'technologies', 'Tech Stack']);
-        $keywords = $get(['Keywords', 'keywords', 'Tags']);
-
-        // Contact Emails
-        $email = $get(['Email', 'email', 'Primary Email', 'Work Email', 'Contact Email']);
-        $emailStatus = $get(['Email Status', 'email_status', 'Primary Email Status', 'Email Confidence']);
-        $emailCatchAll = $get(['Primary Email Catch-all Status', 'Catch-all Status', 'Catch All']);
-        $emailVerifiedAt = $get(['Primary Email Last Verified At', 'Email Last Verified At']);
-
-        // Phones
-        $workPhone = $get(['Work Direct Phone', 'Direct Phone', 'Corporate Phone', 'Company Phone']);
-        $mobilePhone = $get(['Mobile Phone', 'Mobile', 'Cell Phone']);
-        $phone = $get(['Company Phone', 'Phone', 'Corporate Phone', 'Work Direct Phone', 'Other Phone']);
-        if ($phone === '' && $workPhone !== '') {
-            $phone = $workPhone;
+        if ($fullName === '' && $email !== '') {
+            $emailUser = explode('@', $email)[0] ?? '';
+            $fullName = ucwords(str_replace(['.', '_', '-'], ' ', $emailUser));
         }
 
-        // Locations
-        $city = $get(['City', 'city', 'Company City']);
-        $state = $get(['State', 'state', 'Company State', 'Region']);
-        $country = $get(['Country', 'country', 'Company Country']);
-        $address = $get(['Address', 'Company Address', 'address', 'Street']);
+        // Job Title & Department
+        $jobTitle = $get(['Title', 'Job Title', 'Designation', 'title', 'job_title', 'Role', 'Position', 'Headline']);
+        $seniority = $get(['Seniority', 'seniority', 'Level', 'Management Level']);
+        $departments = $get(['Departments', 'Department', 'department', 'departments', 'Functions']);
+        $subDepartments = $get(['Sub Departments', 'sub_departments', 'Sub Department']);
+        if ($departments === '' && $subDepartments !== '') {
+            $departments = $subDepartments;
+        }
+        if ($jobTitle === '' && $seniority !== '') {
+            $jobTitle = $seniority . ' Specialist';
+        }
+
+        // Company
+        $companyName = $get(['Company Name', 'Company', 'Company Name for Emails', 'company_name', 'Account Name', 'Organization', 'Company / Account']);
+        $companyWebsite = $get(['Website', 'Company Website', 'website', 'company_website', 'Domain', 'Company Domain Name']);
+        if ($companyWebsite === '' && $email !== '') {
+            $emailDomain = substr(strrchr($email, "@"), 1);
+            if ($emailDomain && !in_array(strtolower($emailDomain), ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'], true)) {
+                $companyWebsite = 'https://' . $emailDomain;
+            }
+        }
+        $industry = $get(['Industry', 'industry', 'Company Industry', 'Sector', 'Primary Industry']);
+        $employeeCount = $get(['# Employees', 'Employees', 'employee_count', 'Company Size', 'Number of Employees', 'Total Employees']);
+        $annualRevenue = $get(['Annual Revenue', 'Revenue', 'annual_revenue', 'Estimated Revenue', 'Company Revenue']);
+        $technologies = $get(['Technologies', 'technologies', 'Tech Stack', 'Tools']);
+        $keywords = $get(['Keywords', 'keywords', 'Tags', 'SEO Keywords']);
+
+        // Phones (Sanitizing leading quotes)
+        $workPhone = $get(['Work Direct Phone', 'Direct Phone', 'Corporate Phone', 'Company Phone']);
+        $mobilePhone = $get(['Mobile Phone', 'Mobile', 'Cell Phone', 'Work Direct Phone', 'Corporate Phone']);
+        $phone = $get(['Corporate Phone', 'Company Phone', 'Phone', 'Work Direct Phone', 'Mobile Phone', 'Other Phone']);
+        if ($phone === '' && $workPhone !== '') $phone = $workPhone;
+        if ($phone === '' && $mobilePhone !== '') $phone = $mobilePhone;
+        if ($mobilePhone === '' && $phone !== '') $mobilePhone = $phone;
+
+        // Locations (Person + Company fallbacks)
+        $city = $get(['City', 'city', 'Company City', 'Person City']);
+        $state = $get(['State', 'state', 'Company State', 'Person State', 'Region']);
+        $country = $get(['Country', 'country', 'Company Country', 'Person Country']);
+        $address = $get(['Company Address', 'Address', 'address', 'Street', 'Full Address']);
+        if ($city === '' && $address !== '') {
+            $parts = array_map('trim', explode(',', $address));
+            if (count($parts) >= 2) {
+                $city = $parts[count($parts) - 3] ?? $parts[0];
+            }
+        }
 
         // LinkedIn & Social
-        $linkedinUrl = $get(['Person Linkedin Url', 'Person LinkedIn URL', 'LinkedIn URL', 'linkedin_url', 'Contact LinkedIn URL', 'Person Linkedin']);
+        $linkedinUrl = $get(['Person Linkedin Url', 'Person LinkedIn URL', 'LinkedIn URL', 'linkedin_url', 'Contact LinkedIn URL', 'Person Linkedin', 'LinkedIn']);
         $companyLinkedinUrl = $get(['Company Linkedin Url', 'Company LinkedIn URL', 'Company LinkedIn']);
         $facebookUrl = $get(['Facebook Url', 'Facebook URL', 'facebook_url']);
         $twitterUrl = $get(['Twitter Url', 'Twitter URL', 'twitter_url']);
