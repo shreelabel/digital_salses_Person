@@ -45,12 +45,23 @@ class OpenAiCompatibleProvider implements AIProviderInterface
         }
         $cfg = $this->config->get($this->slug);
         $key = $this->config->getKey($this->slug);
-        $base = rtrim((string) $cfg?->baseUrl, '/');
-        $base = str_replace('freellmapis.com', 'freellmapi.com', $base);
-        if (empty($base)) {
-            $base = $this->slug === 'freellmapi' ? 'https://api.freellmapi.com/v1' : ($this->slug === '9router' ? 'https://api.9router.com/v1' : $base);
+        $base = rtrim((string) ($cfg?->baseUrl ?? ''), '/');
+        
+        // Auto-correct to active production endpoints
+        if (str_contains($base, 'api.freellmapi.com') || str_contains($base, 'api.freellmapis.com') || (empty($base) && $this->slug === 'freellmapi')) {
+            $base = 'https://freellmapi-70n3.onrender.com/v1';
         }
-        $model = $cfg?->model ?: ($this->slug === 'freellmapi' ? 'auto' : 'gpt-4o-mini');
+        if (str_contains($base, 'api.9router.com') || (empty($base) && $this->slug === '9router')) {
+            $base = 'https://ninerouter-4qb5.onrender.com/v1';
+        }
+
+        $model = $cfg?->model;
+        if ($this->slug === '9router' && (empty($model) || $model === 'gpt-4o-mini')) {
+            $model = '9ROUTER-COMBO';
+        }
+        if (empty($model)) {
+            $model = $this->slug === 'freellmapi' ? 'auto' : '9ROUTER-COMBO';
+        }
 
         $url = $base . '/chat/completions';
         $body = [

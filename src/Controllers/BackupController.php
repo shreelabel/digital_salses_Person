@@ -141,10 +141,19 @@ class BackupController extends Controller
                         continue;
                     }
                     try {
-                        if ($targetTable === 'slc_provider_config' && !empty($row['api_key_enc'])) {
-                            $plain = \SLC\Core\Crypt::decrypt((string) $row['api_key_enc']);
-                            if ($plain !== null && $plain !== '') {
-                                $row['api_key_enc'] = \SLC\Core\Crypt::encrypt($plain);
+                        if ($targetTable === 'slc_provider_config') {
+                            if (!empty($row['api_key_enc'])) {
+                                $plain = \SLC\Core\Crypt::decrypt((string) $row['api_key_enc']);
+                                if ($plain !== null && $plain !== '') {
+                                    $row['api_key_enc'] = \SLC\Core\Crypt::encrypt($plain);
+                                }
+                            }
+                            if (($row['slug'] ?? '') === 'freellmapi') {
+                                $row['base_url'] = 'https://freellmapi-70n3.onrender.com/v1';
+                                $row['model'] = 'auto';
+                            } elseif (($row['slug'] ?? '') === '9router') {
+                                $row['base_url'] = 'https://ninerouter-4qb5.onrender.com/v1';
+                                $row['model'] = '9ROUTER-COMBO';
                             }
                         }
 
