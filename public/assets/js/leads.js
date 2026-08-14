@@ -84,7 +84,7 @@
       if (assigned) params.assigned_to = assigned;
       const res = await R.list(params);
       tbody.innerHTML = (res.data || []).length ? (res.data || []).map(l => {
-        const contactInfo = l.contact_name ? `<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">👤 ${SLC.escape(l.contact_name)}${l.contact_designation ? ' (' + SLC.escape(l.contact_designation) + ')' : ''}</div>` : '';
+        const contactInfo = l.contact_name ? `<div style="font-size:11.5px;color:#10b981;font-weight:600;margin-top:3px;display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;"><span style="color:#10b981;">👤 ${SLC.escape(l.contact_name)}</span>${l.contact_designation ? '<span style="color:#34d399;font-size:10.5px;background:rgba(16,185,129,0.14);border:1px solid rgba(16,185,129,0.25);padding:1px 6px;border-radius:4px;font-weight:500;">' + SLC.escape(l.contact_designation) + '</span>' : ''}</div>` : '';
         const isApollo = l.source === 'Apollo CSV';
         const apolloAction = isApollo ? `<button class="btn-icon btn-sm" data-apollo-view="${l.id}" title="Inspect 70+ Apollo Fields" style="color:var(--accent);">🔍</button> ` : '';
 
