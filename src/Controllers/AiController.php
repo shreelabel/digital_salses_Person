@@ -163,25 +163,29 @@ class AiController extends Controller
         Auth::requirePermission('ai_lead_finder.use');
         @set_time_limit(180);
         @ini_set('max_execution_time', '180');
-        $data = $this->input();
-        $v = new Validator($data);
-        $v->integer('count', 1, 25);
-        if ($v->fails()) {
-            Response::validationError($v->errors());
-            return;
+        try {
+            $data = $this->input();
+            $v = new Validator($data);
+            $v->integer('count', 1, 25);
+            if ($v->fails()) {
+                Response::validationError($v->errors());
+                return;
+            }
+            if (empty($data['industry']) && empty($data['keywords']) && empty($data['location']) && empty($data['city'])) {
+                Response::error('Provide at least an industry, location, city, or keywords.', 422);
+                return;
+            }
+            $data['count'] ??= 10;
+            $result = AIServiceManager::leadDiscovery()->discover($data, $this->userId());
+            if (!$result['ok']) {
+                $code = str_contains((string) ($result['error'] ?? ''), 'not configured') ? 503 : 502;
+                Response::error($result['error'], $code);
+                return;
+            }
+            Response::success($result);
+        } catch (\Throwable $e) {
+            Response::error('Lead Discovery error: ' . $e->getMessage(), 500);
         }
-        if (empty($data['industry']) && empty($data['keywords']) && empty($data['location']) && empty($data['city'])) {
-            Response::error('Provide at least an industry, location, city, or keywords.', 422);
-            return;
-        }
-        $data['count'] ??= 10;
-        $result = AIServiceManager::leadDiscovery()->discover($data, $this->userId());
-        if (!$result['ok']) {
-            $code = str_contains((string) ($result['error'] ?? ''), 'not configured') ? 503 : 502;
-            Response::error($result['error'], $code);
-            return;
-        }
-        Response::success($result);
     }
 
     /**
@@ -301,58 +305,66 @@ class AiController extends Controller
     /** POST /api/ai/research — generates and persists a research report. */
     public function research(): void
     {
-        $data = $this->input();
-        $companyId = (int) ($data['company_id'] ?? 0);
-        $company = $companyId ? Database::fetch('SELECT * FROM slc_companies WHERE id = :id AND deleted_at IS NULL', ['id' => $companyId]) : null;
-        if (!$company) {
-            Response::error('Company not found.', 404);
-            return;
+        try {
+            $data = $this->input();
+            $companyId = (int) ($data['company_id'] ?? 0);
+            $company = $companyId ? Database::fetch('SELECT * FROM slc_companies WHERE id = :id AND deleted_at IS NULL', ['id' => $companyId]) : null;
+            if (!$company) {
+                Response::error('Company not found.', 404);
+                return;
+            }
+            $result = AIServiceManager::research()->research($company, $this->userId());
+            if (!$result['ok']) {
+                Response::error($result['error'], str_contains((string) $result['error'], 'not configured') ? 503 : 502);
+                return;
+            }
+            $report = $result['report'];
+            $report['company_id'] = $companyId;
+            $id = (new \SLC\Repositories\ResearchRepository())->create($report);
+            $this->activity('ai_research', 'Generated research report for ' . $company['name'], $companyId);
+            Response::success(['report_id' => $id, 'report' => $report, 'queries' => $result['queries'] ?? [], 'elapsed_ms' => $result['elapsed_ms'] ?? 0]);
+        } catch (\Throwable $e) {
+            Response::error('Research error: ' . $e->getMessage(), 500);
         }
-        $result = AIServiceManager::research()->research($company, $this->userId());
-        if (!$result['ok']) {
-            Response::error($result['error'], str_contains((string) $result['error'], 'not configured') ? 503 : 502);
-            return;
-        }
-        $report = $result['report'];
-        $report['company_id'] = $companyId;
-        $id = (new \SLC\Repositories\ResearchRepository())->create($report);
-        $this->activity('ai_research', 'Generated research report for ' . $company['name'], $companyId);
-        Response::success(['report_id' => $id, 'report' => $report, 'queries' => $result['queries'] ?? [], 'elapsed_ms' => $result['elapsed_ms'] ?? 0]);
     }
 
     /** POST /api/ai/generate-email — draft only (never sent). */
     public function generateEmail(): void
     {
-        $data = $this->input();
-        $companyId = (int) ($data['company_id'] ?? 0);
-        $company = $companyId ? Database::fetch('SELECT * FROM slc_companies WHERE id = :id AND deleted_at IS NULL', ['id' => $companyId]) : null;
-        if (!$company) {
-            Response::error('Company not found.', 404);
-            return;
-        }
-        $contact = null;
-        if (!empty($data['contact_id'])) {
-            $contact = Database::fetch('SELECT * FROM slc_contacts WHERE id = :id', ['id' => (int) $data['contact_id']]);
-        }
-        $objective = (string) ($data['objective'] ?? '');
-        $result = AIServiceManager::email()->generate($company, $contact, $objective, $this->userId());
-        if (!$result['ok']) {
-            Response::error($result['error'], str_contains((string) $result['error'], 'not configured') ? 503 : 502);
-            return;
-        }
+        try {
+            $data = $this->input();
+            $companyId = (int) ($data['company_id'] ?? 0);
+            $company = $companyId ? Database::fetch('SELECT * FROM slc_companies WHERE id = :id AND deleted_at IS NULL', ['id' => $companyId]) : null;
+            if (!$company) {
+                Response::error('Company not found.', 404);
+                return;
+            }
+            $contact = null;
+            if (!empty($data['contact_id'])) {
+                $contact = Database::fetch('SELECT * FROM slc_contacts WHERE id = :id', ['id' => (int) $data['contact_id']]);
+            }
+            $objective = (string) ($data['objective'] ?? '');
+            $result = AIServiceManager::email()->generate($company, $contact, $objective, $this->userId());
+            if (!$result['ok']) {
+                Response::error($result['error'], str_contains((string) $result['error'], 'not configured') ? 503 : 502);
+                return;
+            }
 
-        // persist as DRAFT (never sent)
-        $msgId = Database::insert('slc_email_messages', [
-            'company_id'   => $companyId,
-            'contact_id'   => $contact['id'] ?? null,
-            'lead_id'      => $data['lead_id'] ?? null,
-            'subject'      => $result['subject'],
-            'body'         => $result['body'],
-            'status'       => 'draft',
-            'ai_generated' => 1,
-        ]);
-        $this->activity('ai_email', 'Generated email draft for ' . $company['name'], $companyId);
-        Response::success(['message_id' => $msgId, 'subject' => $result['subject'], 'body' => $result['body']]);
+            // persist as DRAFT (never sent)
+            $msgId = Database::insert('slc_email_messages', [
+                'company_id'   => $companyId,
+                'contact_id'   => $contact['id'] ?? null,
+                'lead_id'      => $data['lead_id'] ?? null,
+                'subject'      => $result['subject'],
+                'body'         => $result['body'],
+                'status'       => 'draft',
+                'ai_generated' => 1,
+            ]);
+            $this->activity('ai_email', 'Generated email draft for ' . $company['name'], $companyId);
+            Response::success(['message_id' => $msgId, 'subject' => $result['subject'], 'body' => $result['body']]);
+        } catch (\Throwable $e) {
+            Response::error('Email generation error: ' . $e->getMessage(), 500);
+        }
     }
 
     public function requests(): void

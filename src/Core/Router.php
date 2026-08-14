@@ -45,7 +45,7 @@ final class Router
                         'route' => $route, 'msg' => $e->getMessage(),
                     ]);
                     Response::error(
-                        Config::debug() ? $e->getMessage() : 'Server error processing request.',
+                        $e->getMessage() ?: 'Server error processing request.',
                         500
                     );
                 }
