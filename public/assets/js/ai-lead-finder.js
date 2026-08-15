@@ -1445,11 +1445,16 @@
 
   async function handleFsLeadGeneration() {
     const companySearch = ($('fsCompanyNameInput')?.value || '').trim();
-    const locationRaw = ($('fsLocationInput')?.value || '').trim() || 'West Bengal, Bihar, Odisha, Nepal, Bhutan, Manipur, Sikkim, Assam';
-    const keyword = ($('fsKeywordInput')?.value || '').trim() || (companySearch ? `${companySearch} Factory & Plant` : 'Packaged Drinking Water, Liquor factory, Bakery & Confectionery');
-    const products = ($('fsProductsInput')?.value || '').trim() || 'Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls, POS Rolls';
-    const maxLeads = parseInt($('fsMaxLeadsInput')?.value, 10) || 30;
+    const locationRaw = ($('fsLocationInput')?.value || '').trim();
+    const keyword = ($('fsKeywordInput')?.value || '').trim();
+    const products = ($('fsProductsInput')?.value || '').trim();
+    const maxLeads = parseInt($('fsMaxLeadsInput')?.value, 10) || 10;
     const engine = $('fsEngineMode')?.value || 'smart';
+
+    if (!locationRaw && !companySearch && !keyword) {
+      SLC.toast('Please enter at least a Target Location, Company Name, or Industry keyword.', 'warn');
+      return;
+    }
 
     const submitBtn = $('fsSubmitBtn');
     const progressSection = $('fsProgressSection');
@@ -1464,7 +1469,7 @@
       .split(/[,;/|]+|\band\b/i)
       .map(l => l.trim())
       .filter(Boolean);
-    const locations = parsedLocations.length > 0 ? parsedLocations : ['Sikkim', 'West Bengal', 'Bihar', 'Odisha', 'Nepal', 'Bhutan', 'Manipur', 'Assam'];
+    const locations = parsedLocations.length > 0 ? parsedLocations : (locationRaw ? [locationRaw] : ['India']);
 
     fsCurrentLeads = [];
 

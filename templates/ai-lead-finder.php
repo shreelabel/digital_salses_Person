@@ -483,7 +483,7 @@
               <span>Target Region(s) / Location</span>
               <span style="color:var(--bad);">*</span>
             </label>
-            <input type="text" id="fsLocationInput" class="fld" placeholder="e.g. Sikkim, West Bengal, Bhutan, Bihar, Nepal, Odisha, Manipur..." value="West Bengal, Bihar, Odisha, Nepal, Bhutan, Manipur, Sikkim, Assam" style="width:100%;">
+            <input type="text" id="fsLocationInput" class="fld" placeholder="e.g. Sikkim, West Bengal, Bhutan, Bihar, Nepal, Odisha, Manipur..." value="" style="width:100%;">
             <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
               💡 Tip: Type single or multiple locations separated by commas, or click quick presets below.
             </div>
@@ -531,7 +531,7 @@
               <span>Target Buyer Industry</span>
               <span style="color:var(--bad);">*</span>
             </label>
-            <input type="text" id="fsKeywordInput" class="fld" placeholder="e.g. Packaged Drinking Water, Liquor factory, Bakery, Pharma..." value="Packaged Drinking Water, Liquor factory, Bakery & Confectionery" style="width:100%;">
+            <input type="text" id="fsKeywordInput" class="fld" placeholder="e.g. Packaged Drinking Water, Liquor factory, Bakery, Pharma..." value="" style="width:100%;">
             <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
               💡 Tip: Buyer category requiring packaging, labels, or bottle wrapping.
             </div>
@@ -553,7 +553,7 @@
               <span>Shree Label Offerings & Products</span>
               <span style="font-size:10px;background:var(--panel2);color:var(--muted);padding:1px 6px;border-radius:4px;margin-left:auto;">Optional</span>
             </label>
-            <input type="text" id="fsProductsInput" class="fld" placeholder="e.g. Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls..." value="Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls, POS Rolls" style="width:100%;">
+            <input type="text" id="fsProductsInput" class="fld" placeholder="e.g. Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls..." value="" style="width:100%;">
             <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
               💡 Tip: Specific label formats or thermal roll requirements you pitch.
             </div>
