@@ -60,7 +60,7 @@ $assetBase = $base . '/public/assets';
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Welcome Back — Shree Label Digital Sales Person</title>
+<title>Welcome Back — Shree Label Creation Digital Sales Person</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -420,13 +420,13 @@ $assetBase = $base . '/public/assets';
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
       </div>
       <div>
-        <div class="brand-title">SHREE LABEL</div>
+        <div class="brand-title">SHREE LABEL CREATION</div>
         <div class="brand-sub">DIGITAL SALES PERSON</div>
       </div>
     </div>
 
     <!-- AI Hero Artwork -->
-    <img class="hero-img-bg" src="<?= htmlspecialchars($assetBase) ?>/images/user_hero_artwork.jpg" alt="Shree Label Digital Sales Person Hero">
+    <img class="hero-img-bg" src="<?= htmlspecialchars($assetBase) ?>/images/user_hero_artwork.jpg" alt="Shree Label Creation Digital Sales Person Hero">
   </div>
 
   <!-- RIGHT FORM PANEL (Exact Reference UI) -->
@@ -439,7 +439,7 @@ $assetBase = $base . '/public/assets';
       <div class="form-header">
         <!-- BRAND TITLE ABOVE WELCOME BACK -->
         <div class="brand-right-banner">
-          <div class="brand-right-main">Shree Label</div>
+          <div class="brand-right-main">Shree Label Creation</div>
           <div class="brand-right-sub">Digital Sales Person</div>
         </div>
 
@@ -505,7 +505,7 @@ $assetBase = $base . '/public/assets';
     </div>
 
     <div class="credit-text">
-      @Shree Label Creation || @Developed by Mriganka Bhusan Debnath
+      @Shree Label Creation 2026 || @ Developed by : Mriganka Bhusan Debnath
     </div>
   </div>
 </div>
