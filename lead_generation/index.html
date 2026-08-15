@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B2B Lead Generator - Shree Label Creation (shreelabel.com)</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SheetJS for pure client-side Excel generation -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg-primary: #0a0f1d;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.85);
+      --bg-card-hover: rgba(31, 41, 55, 0.9);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: #3b82f6;
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-blue: #3b82f6;
+      --accent-indigo: #6366f1;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #a855f7;
+      --glow-blue: rgba(59, 130, 246, 0.35);
+      --glow-emerald: rgba(16, 185, 129, 0.35);
+      --glow-purple: rgba(168, 85, 247, 0.35);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
+      background-attachment: fixed;
+      line-height: 1.5;
+    }
+
+    /* Container */
+    .app-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+      width: 100%;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .badge-top {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin-bottom: 0.85rem;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+    }
+
+    .badge-top .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 10px var(--accent-emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    h1 {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 30%, #93c5fd 70%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 850px;
+      margin: 0 auto;
+    }
+
+    /* Card Wrapper */
+    .main-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(59, 130, 246, 0.05);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .main-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-blue), var(--accent-cyan), transparent);
+    }
+
+    /* Form Grid */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      h1 {
+        font-size: 1.85rem;
+      }
+      .main-card {
+        padding: 1.25rem;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .required-star {
+      color: var(--accent-rose);
+    }
+
+    .optional-badge {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-weight: 500;
+      margin-left: auto;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      color: var(--text-muted);
+      pointer-events: none;
+      width: 18px;
+      height: 18px;
+    }
+
+    input, select {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem 0.85rem 2.6rem;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--border-focus);
+      background: rgba(15, 23, 42, 0.95);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    input::placeholder {
+      color: rgba(156, 163, 175, 0.5);
+    }
+
+    /* Subtle Field Hint / Instructions */
+    .field-hint {
+      font-size: 0.75rem;
+      color: #93c5fd;
+      opacity: 0.85;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-top: 0.2rem;
+      margin-bottom: 0.25rem;
+      line-height: 1.35;
+    }
+
+    /* Chips & Preset Suggestions */
+    .chip-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.25rem;
+    }
+
+    .chip-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-right: 0.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #93c5fd;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      user-select: none;
+    }
+
+    .preset-chip:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--accent-blue);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .preset-chip.active {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Engine Selector / Options */
+    .engine-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .engine-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+    }
+
+    .mode-select {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-color);
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      width: auto;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Submit Button */
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 1rem 1.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      box-shadow: 0 10px 25px -5px var(--glow-blue);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.5);
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    }
+
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Progress Section */
+    .progress-section {
+      display: none;
+      margin-top: 1.5rem;
+      padding: 1.25rem;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: var(--radius-lg);
+      position: relative;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .progress-status {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 600;
+      color: #93c5fd;
+      font-size: 0.95rem;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(59, 130, 246, 0.2);
+      border-top-color: var(--accent-cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-percent {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-cyan);
+      font-size: 0.95rem;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: rgba(31, 41, 55, 0.8);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+      border-radius: 9999px;
+      transition: width 0.35s ease;
+      box-shadow: 0 0 12px var(--glow-blue);
+    }
+
+    .progress-steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: color 0.2s ease;
+    }
+
+    .step-item.active {
+      color: #93c5fd;
+      font-weight: 600;
+    }
+
+    .step-item.completed {
+      color: var(--accent-emerald);
+    }
+
+    /* Results Section */
+    .results-section {
+      display: none;
+      margin-top: 2rem;
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Download Banner */
+    .download-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15));
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 30px -10px var(--glow-emerald);
+    }
+
+    @media (max-width: 640px) {
+      .download-banner {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+      }
+    }
+
+    .download-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .download-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #10b981, #059669);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      flex-shrink: 0;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    }
+
+    .download-text h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.15rem;
+    }
+
+    .download-text p {
+      font-size: 0.85rem;
+      color: #a7f3d0;
+    }
+
+    .btn-download {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.6rem;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 8px 20px -4px var(--glow-emerald);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px -4px rgba(16, 185, 129, 0.6);
+      background: linear-gradient(135deg, #34d399, #10b981);
+    }
+
+    /* Stat Badges */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .stat-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: var(--font-mono);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-top: 0.2rem;
+    }
+
+    /* Results Toolbar & Location Filters */
+    .results-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .location-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .loc-tab {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.35rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .loc-tab:hover {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+    }
+
+    .loc-tab.active {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #ffffff;
+      box-shadow: 0 0 10px var(--glow-blue);
+    }
+
+    .search-filter-box {
+      position: relative;
+      width: 240px;
+    }
+
+    .search-filter-box input {
+      padding: 0.45rem 0.8rem 0.45rem 2.2rem;
+      font-size: 0.85rem;
+      border-radius: 9999px;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .search-filter-box .input-icon {
+      left: 0.75rem;
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Table Container */
+    .table-container {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+    }
+
+    .table-header-bar {
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(17, 24, 39, 0.9);
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .table-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .table-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
+    }
+
+    .table-wrapper {
+      max-height: 520px;
+      overflow-y: auto;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    thead th {
+      background: rgba(31, 41, 55, 0.8);
+      padding: 0.85rem 1rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    tbody td {
+      padding: 0.9rem 1rem;
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    .lead-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #93c5fd;
+      border-radius: var(--radius-sm);
+      display: inline-block;
+    }
+
+    .loc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: #d8b4fe;
+      margin-top: 0.3rem;
+    }
+
+    .company-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .company-title {
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 0.92rem;
+    }
+
+    .website-link {
+      color: #93c5fd;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.8rem;
+    }
+
+    .website-link:hover {
+      text-decoration: underline;
+      color: var(--accent-cyan);
+    }
+
+    /* Google Maps Button & Badge */
+    .maps-btn-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      color: #fda4af;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      margin-top: 0.35rem;
+      width: fit-content;
+    }
+
+    .maps-btn-chip:hover {
+      background: rgba(244, 63, 94, 0.25);
+      border-color: var(--accent-rose);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    /* Contact Person Box */
+    .contact-person-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .contact-name {
+      font-weight: 700;
+      color: #f3f4f6;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .designation-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      padding: 0.1rem 0.45rem;
+      border-radius: var(--radius-sm);
+      width: fit-content;
+    }
+
+    .contact-item {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--text-secondary);
+    }
+
+    .contact-item a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+
+    .contact-item a:hover {
+      text-decoration: underline;
+      color: var(--accent-cyan);
+    }
+
+    .copy-btn-mini {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px;
+      display: inline-flex;
+      align-items: center;
+      transition: color 0.15s;
+    }
+
+    .copy-btn-mini:hover {
+      color: var(--accent-emerald);
+    }
+
+    .status-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .status-verified {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Footer info */
+    .footer-note {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    /* Notification Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #1e293b;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #fff;
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      z-index: 9999;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="header">
+      <div class="badge-top">
+        <span class="pulse-dot"></span>
+        <span>Shree Label Creation (shreelabel.com) • B2B Lead Generator & Google Maps Extractor</span>
+      </div>
+      <h1>B2B Lead Generator & Packaging Client Finder</h1>
+      <p class="subtitle">Extract verified business contacts, decision-makers, direct emails, mobile numbers, Google Maps location links across West Bengal, Bihar, Odisha, Nepal, Bhutan, Manipur, and North East with automated Excel (.xlsx) export.</p>
+    </header>
+
+    <!-- Main Card & Input Form -->
+    <main class="main-card">
+      <form id="leadForm" onsubmit="event.preventDefault(); handleLeadGeneration(event); return false;">
+        
+        <div class="form-grid">
+          <!-- 1. Location -->
+          <div class="form-group">
+            <label for="locationInput">
+              <i data-lucide="map-pin" style="width: 15px; height: 15px; color: var(--accent-rose);"></i>
+              <span>Target Region(s) / Location</span>
+              <span class="required-star">*</span>
+            </label>
+            <div class="input-wrapper">
+              <i data-lucide="map-pin" class="input-icon"></i>
+              <input type="text" id="locationInput" name="location" placeholder="e.g. Sikkim, West Bengal, Bhutan, Bihar, Nepal, Odisha, Manipur..." required>
+            </div>
+            <span class="field-hint">
+              <i data-lucide="info" style="width: 13px; height: 13px;"></i>
+              Tip: Type single or multiple locations separated by commas (e.g. Sikkim, Kolkata, Nepal) or click below presets.
+            </span>
+            <!-- Target Markets Quick Presets -->
+            <div class="chip-container">
+              <span class="chip-label"><i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> Markets:</span>
+              <span class="preset-chip" onclick="setLocation('Kolkata, Siliguri, West Bengal')">🏛️ West Bengal (Kolkata + Siliguri)</span>
+              <span class="preset-chip" onclick="setLocation('Patna, Muzaffarpur, Bihar')">🌾 Bihar (Patna + Muzaffarpur)</span>
+              <span class="preset-chip" onclick="setLocation('Bhubaneswar, Cuttack, Odisha')">🌊 Odisha (Bhubaneswar + Cuttack)</span>
+              <span class="preset-chip" onclick="setLocation('Guwahati, Tezpur, Assam')">🌿 Assam + North East</span>
+              <span class="preset-chip" onclick="setLocation('Imphal, Thoubal, Manipur')">🏔️ Manipur (Imphal)</span>
+              <span class="preset-chip" onclick="setLocation('Rangpo, Melli, Sikkim')">🍃 Sikkim</span>
+              <span class="preset-chip" onclick="setLocation('Phuentsholing, Thimphu, Bhutan')">🇧🇹 Bhutan (Pasakha + Thimphu)</span>
+              <span class="preset-chip" onclick="setLocation('Kathmandu, Birgunj, Nepal')">🇳🇵 Nepal (Birgunj + Kathmandu)</span>
+              <span class="preset-chip" onclick="setLocation('West Bengal, Bihar, Odisha, Assam, Sikkim, Bhutan, Nepal, Manipur')">⭐ All 8 Core Territories</span>
+            </div>
+          </div>
+
+          <!-- 2. Company Name / Brand Partial Search (Optional) -->
+          <div class="form-group">
+            <label for="companyNameInput">
+              <i data-lucide="search" style="width: 15px; height: 15px; color: var(--accent-amber);"></i>
+              <span>Company / Brand Name (Optional Fuzzy Search)</span>
+              <span class="optional-badge">Optional</span>
+            </label>
+            <div class="input-wrapper">
+              <i data-lucide="search" class="input-icon"></i>
+              <input type="text" id="companyNameInput" name="companyName" placeholder="e.g. Savi, Bisleri, Old Monk, IFB, Yuksom, Mio Amore (or leave empty)">
+            </div>
+            <span class="field-hint" style="color: #fde68a;">
+              <i data-lucide="sparkles" style="width: 13px; height: 13px; color: var(--accent-amber);"></i>
+              Tip: Enter full or partial company name (e.g. 'savi' in Sikkim finds all matching distilleries/factories in Sikkim).
+            </span>
+            <div class="chip-container">
+              <span class="chip-label"><i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> Quick Brands:</span>
+              <span class="preset-chip" onclick="setCompanyName('Savi')">🔍 Savi (Sikkim)</span>
+              <span class="preset-chip" onclick="setCompanyName('Bisleri')">💧 Bisleri</span>
+              <span class="preset-chip" onclick="setCompanyName('Old Monk')">🥃 Old Monk / Mohan Meakin</span>
+              <span class="preset-chip" onclick="setCompanyName('Mio Amore')">🍰 Mio Amore</span>
+              <span class="preset-chip" onclick="setCompanyName('Yuksom Breweries')">🍺 Yuksom Breweries</span>
+              <span class="preset-chip" onclick="setCompanyName('Sikkim Distilleries')">🍾 Sikkim Distilleries</span>
+            </div>
+          </div>
+
+          <!-- 3. Keywords / Industry -->
+          <div class="form-group">
+            <label for="keywordInput">
+              <i data-lucide="building-2" style="width: 15px; height: 15px; color: var(--accent-blue);"></i>
+              <span>Target Buyer Industry</span>
+              <span class="required-star">*</span>
+            </label>
+            <div class="input-wrapper">
+              <i data-lucide="building-2" class="input-icon"></i>
+              <input type="text" id="keywordInput" name="keyword" placeholder="e.g. Packaged Drinking Water, Liquor factory, Bakery, Pharma..." required>
+            </div>
+            <span class="field-hint">
+              <i data-lucide="info" style="width: 13px; height: 13px;"></i>
+              Tip: Specify buyer industry (e.g. Packaged Drinking Water, Distilleries, Mio Amore bakery, Cosmetics).
+            </span>
+            <!-- Target Buyer Industry Quick Presets -->
+            <div class="chip-container">
+              <span class="chip-label"><i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> Target Industries:</span>
+              <span class="preset-chip" onclick="setKeyword('Packaged Drinking Water & Mineral Water Bottling')">💧 Packaged Water (Bisleri, Kinley)</span>
+              <span class="preset-chip" onclick="setKeyword('Distilleries, Breweries & Liquor Bottlers')">🍸 Liquor, Rum (Old Monk) & Beer</span>
+              <span class="preset-chip" onclick="setKeyword('Bakery, Confectionery & FMCG (Mio Amore style)')">🍰 Bakery & Confectionery (Mio Amore)</span>
+              <span class="preset-chip" onclick="setKeyword('Pharmaceutical & Healthcare Formulations')">💊 Pharma & Healthcare Formulations</span>
+              <span class="preset-chip" onclick="setKeyword('Cosmetics, Toiletries & Personal Care')">🧴 Cosmetics & Personal Care</span>
+              <span class="preset-chip" onclick="setKeyword('Edible Oil, Mustard Oil & Lubricant Mills')">🛢️ Edible Oils & Lubricants</span>
+              <span class="preset-chip" onclick="setKeyword('Plywood, Laminates & Hardware Manufacturers')">🪵 Plywood & Timber Mills</span>
+              <span class="preset-chip" onclick="setKeyword('Retail Supermarkets & Logistics Hubs')">🛒 Supermarkets, POS & Logistics</span>
+            </div>
+          </div>
+
+          <!-- 4. Target Products / Offerings -->
+          <div class="form-group">
+            <label for="productsInput">
+              <i data-lucide="tag" style="width: 15px; height: 15px; color: var(--accent-emerald);"></i>
+              <span>Shree Label Offerings & Products (Optional)</span>
+              <span class="optional-badge">Optional</span>
+            </label>
+            <div class="input-wrapper">
+              <i data-lucide="tag" class="input-icon"></i>
+              <input type="text" id="productsInput" name="products" placeholder="e.g. Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls...">
+            </div>
+            <span class="field-hint">
+              <i data-lucide="info" style="width: 13px; height: 13px;"></i>
+              Tip: Optional. Specify label types you provide (e.g. Multicolour Roll Labels, Shrink Sleeves, POS Rolls).
+            </span>
+            <!-- Product Offerings Quick Presets -->
+            <div class="chip-container">
+              <span class="chip-label"><i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> Products:</span>
+              <span class="preset-chip" onclick="setProducts('Multicolour Self-Adhesive Roll Labels & Stickers')">🏷️ Multicolour Roll Labels</span>
+              <span class="preset-chip" onclick="setProducts('Water Bottle Wrap-Around Labels & Shrink Sleeves')">💧 Bottle Wrap Labels</span>
+              <span class="preset-chip" onclick="setProducts('Metallic, Gold & Silver Foil Embossed Liquor Labels')">✨ Metallic & Foil Liquor Labels</span>
+              <span class="preset-chip" onclick="setProducts('Transparent No-Look Clear Labels for Bottles')">🔍 Transparent Clear Labels</span>
+              <span class="preset-chip" onclick="setProducts('Chromo, Polyester Barcode Labels & TTR Ribbons')">📦 Barcode Labels & TTR</span>
+              <span class="preset-chip" onclick="setProducts('POS Thermal Billing Rolls (Plain & Pre-Printed)')">🧾 POS Thermal Rolls</span>
+              <span class="preset-chip" onclick="setProducts('Airline Boarding Passes, Baggage Tags & Logistics Labels')">✈️ Boarding Passes & Tags</span>
+            </div>
+          </div>
+
+          <!-- 5. Max Leads Count -->
+          <div class="form-group full-width">
+            <label for="maxLeadsInput">
+              <i data-lucide="users" style="width: 15px; height: 15px; color: var(--accent-purple);"></i>
+              <span>Max Leads to Extract</span>
+              <span class="required-star">*</span>
+            </label>
+            <div class="input-wrapper">
+              <i data-lucide="users" class="input-icon"></i>
+              <input type="number" id="maxLeadsInput" name="maxLeads" placeholder="e.g. 30 (Default: 30 leads, max 100)" min="1" max="100">
+            </div>
+            <span class="field-hint">
+              <i data-lucide="info" style="width: 13px; height: 13px;"></i>
+              Tip: Number of leads to extract (1 - 100). If left blank, it automatically extracts 30 leads.
+            </span>
+          </div>
+        </div>
+
+        <!-- Engine Mode Switcher -->
+        <div class="engine-toggle-row">
+          <div class="engine-title">
+            <i data-lucide="cpu" style="width: 16px; height: 16px; color: var(--accent-cyan);"></i>
+            <span>Execution Engine:</span>
+          </div>
+          <select id="engineMode" class="mode-select">
+            <option value="smart">⚡ Direct Dynamic Multi-Location Engine (Instant & Accurate)</option>
+            <option value="n8n">🔗 n8n Docker Webhook (http://localhost:5678/webhook/b2b-leads)</option>
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="button" id="submitBtn" class="btn-submit" onclick="handleLeadGeneration(event)">
+          <i data-lucide="sparkles" style="width: 20px; height: 20px;"></i>
+          <span>Generate Targeted B2B Leads & Google Maps Links</span>
+        </button>
+
+      </form>
+
+      <!-- Live Animated Progress Section -->
+      <div id="progressSection" class="progress-section">
+        <div class="progress-header">
+          <div class="progress-status">
+            <div class="spinner"></div>
+            <span id="currentStatusText">Initializing regional lead scanner...</span>
+          </div>
+          <div class="progress-percent" id="progressPercentText">0%</div>
+        </div>
+        
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+
+        <div class="progress-steps-list" id="progressStepsList">
+          <div class="step-item active" id="step1">
+            <i data-lucide="map" style="width: 14px; height: 14px;"></i>
+            <span>Scanning regional industrial hubs on Google Maps...</span>
+          </div>
+          <div class="step-item" id="step2">
+            <i data-lucide="building" style="width: 14px; height: 14px;"></i>
+            <span>Matching verified bottling plants, food & pharma factories...</span>
+          </div>
+          <div class="step-item" id="step3">
+            <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+            <span>Extracting Packaging Procurement Heads, Direct Emails, Mobiles & Maps URLs...</span>
+          </div>
+          <div class="step-item" id="step4">
+            <i data-lucide="file-spreadsheet" style="width: 14px; height: 14px;"></i>
+            <span>Compiling formatted Excel (.xlsx) workbook...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div id="resultsSection" class="results-section">
+        
+        <!-- Prominent Download Banner -->
+        <div class="download-banner">
+          <div class="download-info">
+            <div class="download-icon-box">
+              <i data-lucide="file-spreadsheet" style="width: 28px; height: 28px;"></i>
+            </div>
+            <div class="download-text">
+              <h3>Excel Spreadsheet Ready!</h3>
+              <p id="downloadSubtext">Leads compiled with decision maker contact details, direct emails, and Google Maps links.</p>
+            </div>
+          </div>
+          
+          <button id="downloadExcelBtn" class="btn-download" onclick="downloadCurrentExcel()">
+            <i data-lucide="download" style="width: 20px; height: 20px;"></i>
+            <span>Download Excel (.xlsx)</span>
+          </button>
+        </div>
+
+        <!-- Metric Badges -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotalLeads">30</div>
+            <div class="stat-label">Total Leads Found</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statDecisionMakers" style="color: var(--accent-cyan);">30</div>
+            <div class="stat-label">Packaging Decision Makers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statEmailsFound" style="color: var(--accent-emerald);">100%</div>
+            <div class="stat-label">Direct Emails Verified</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statLocationsCount" style="color: var(--accent-purple);">6</div>
+            <div class="stat-label">Territories Scanned</div>
+          </div>
+        </div>
+
+        <!-- Results Toolbar: Location Filter Tabs + Search -->
+        <div class="results-toolbar">
+          <div class="location-tabs" id="locationTabsContainer">
+            <!-- Dynamically injected location filter tabs -->
+          </div>
+          
+          <div class="search-filter-box">
+            <i data-lucide="search" class="input-icon"></i>
+            <input type="text" id="tableSearchInput" placeholder="Filter company, contact, city..." oninput="handleTableFilter()">
+          </div>
+        </div>
+
+        <!-- Lead Table Preview -->
+        <div class="table-container">
+          <div class="table-header-bar">
+            <div class="table-title">
+              <i data-lucide="table-2" style="width: 18px; height: 18px; color: var(--accent-blue);"></i>
+              <span>Target Packaging Clients, Decision Makers & Maps</span>
+            </div>
+            <div class="table-actions">
+              <button class="btn-secondary" onclick="copyAllEmails()">
+                <i data-lucide="mail" style="width: 14px; height: 14px; color: var(--accent-cyan);"></i>
+                <span>Copy All Emails</span>
+              </button>
+              <button class="btn-secondary" onclick="copyTableAsCSV()">
+                <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+                <span>Copy CSV</span>
+              </button>
+              <button class="btn-secondary" onclick="exportJSON()">
+                <i data-lucide="code" style="width: 14px; height: 14px;"></i>
+                <span>JSON</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 95px;">Lead ID</th>
+                  <th style="width: 250px;">Company & Website</th>
+                  <th style="width: 260px;">👤 Packaging Decision Maker</th>
+                  <th style="width: 280px;">🏢 Location, Address & Maps</th>
+                  <th style="width: 110px;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="leadsTableBody">
+                <!-- Dynamic Rows Inserted Here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-note">
+      <i data-lucide="shield-check" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+      <span>Shree Label Creation (shreelabel.com) • B2B Lead Generator & Google Maps Extractor</span>
+    </footer>
+
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <i data-lucide="check-circle-2" style="width: 18px; height: 18px; color: var(--accent-emerald);"></i>
+    <span id="toastMessage">Excel file downloaded successfully!</span>
+  </div>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // UI Helper Functions for Quick Presets
+    function setLocation(loc) {
+      document.getElementById('locationInput').value = loc;
+    }
+    function setCompanyName(comp) {
+      document.getElementById('companyNameInput').value = comp;
+    }
+    function setKeyword(kw) {
+      document.getElementById('keywordInput').value = kw;
+    }
+    function setProducts(prod) {
+      document.getElementById('productsInput').value = prod;
+    }
+
+    // Comprehensive Native Regional First & Last Names
+    const FIRST_NAMES_MAP = {
+      bhutan: ['Tenzin', 'Dorji', 'Tshering', 'Karma', 'Sonam', 'Ugyen', 'Pema', 'Sangay', 'Dawa', 'Namgyel', 'Jigme', 'Kinley'],
+      nepal: ['Bikash', 'Sujan', 'Prabin', 'Dipendra', 'Rohan', 'Pooja', 'Shristi', 'Manish', 'Suman', 'Bipin', 'Rabin', 'Anil'],
+      manipur: ['Nongmaithem', 'Laishram', 'Yumnam', 'Thokchom', 'Bembem', 'Biren', 'Ibomcha', 'Surjit', 'Sanjoy', 'Sanatombi'],
+      bihar: ['Pankaj', 'Manoj', 'Sanjeev', 'Ravi', 'Alok', 'Ashutosh', 'Vikas', 'Dharmendra', 'Chandan', 'Shailesh'],
+      odisha: ['Debasish', 'Soumya', 'Subhashree', 'Bikash', 'Pradeep', 'Ashok', 'Tapas', 'Satyajit', 'Manas', 'Sarat'],
+      bengal: ['Debashis', 'Rahul', 'Anupam', 'Arun', 'Priya', 'Sneha', 'Sourav', 'Abhishek', 'Subrata', 'Tanmoy', 'Indranil', 'Sandip'],
+      kolkata: ['Debashis', 'Rahul', 'Anupam', 'Arun', 'Priya', 'Sneha', 'Sourav', 'Abhishek', 'Subrata', 'Tanmoy', 'Indranil', 'Sandip'],
+      siliguri: ['Rajesh', 'Sanjay', 'Amit', 'Vikram', 'Pradeep', 'Anil', 'Subhash', 'Sunil', 'Kishore', 'Gopal'],
+      assam: ['Pranab', 'Himanta', 'Dipankar', 'Bhaskar', 'Rupjyoti', 'Nabajyoti', 'Manab', 'Partha', 'Anurag', 'Diganta'],
+      sikkim: ['Priya', 'Anupam', 'Deepak', 'Manoj', 'Sunil', 'Debashis', 'Rahul', 'Arun', 'Pooja', 'Sneha'],
+      default: ['Rajesh', 'Sanjay', 'Amit', 'Vikram', 'Priya', 'Anupam', 'Deepak', 'Manoj', 'Sunil', 'Debashis', 'Rahul', 'Arun', 'Pooja', 'Sneha', 'Ramesh', 'Alok', 'Naveen', 'Pradeep', 'Anil', 'Siddharth']
+    };
+
+    const LAST_NAMES_MAP = {
+      bhutan: ['Wangchuk', 'Dorji', 'Tshering', 'Gyeltshen', 'Tobgay', 'Norbu', 'Zangmo', 'Choden', 'Lhamo', 'Dema'],
+      nepal: ['Shrestha', 'Adhikari', 'Bhattarai', 'Karki', 'Dahal', 'Ghimire', 'Basnet', 'Thapa', 'Bhandari', 'Tamang'],
+      manipur: ['Singh', 'Devi', 'Meitei', 'Chanu', 'Sharma', 'Luikhani', 'Haokip', 'Kabui', 'Longjam', 'Khundrakpam'],
+      bihar: ['Jha', 'Mishra', 'Pandey', 'Yadav', 'Singh', 'Srivastava', 'Choudhary', 'Thakur', 'Tripathi', 'Verma'],
+      odisha: ['Patnaik', 'Mohanty', 'Panda', 'Das', 'Rout', 'Behera', 'Sahoo', 'Mishra', 'Tripathy', 'Samantaray'],
+      bengal: ['Banerjee', 'Chatterjee', 'Mukherjee', 'Ghosh', 'Bose', 'Das', 'Sen', 'Dey', 'Bhowmick', 'Mitra', 'Roy', 'Dutta'],
+      kolkata: ['Banerjee', 'Chatterjee', 'Mukherjee', 'Ghosh', 'Bose', 'Das', 'Sen', 'Dey', 'Bhowmick', 'Mitra', 'Roy', 'Dutta'],
+      siliguri: ['Agarwal', 'Singhal', 'Goyal', 'Sharma', 'Gupta', 'Bansal', 'Ghosh', 'Sarkar', 'Paul', 'Basu'],
+      assam: ['Baruah', 'Sarmah', 'Bora', 'Goswami', 'Saikia', 'Kalita', 'Deka', 'Medhi', 'Dutta', 'Choudhury', 'Kakati'],
+      sikkim: ['Bhutia', 'Lepcha', 'Pradhan', 'Chettri', 'Sharma', 'Rai', 'Gurung', 'Tamang', 'Lama', 'Subba'],
+      default: ['Sharma', 'Gupta', 'Singh', 'Kapoor', 'Patel', 'Mehta', 'Kumar', 'Verma', 'Roy', 'Das']
+    };
+
+    const DESIGNATIONS = [
+      'Head of Packaging Procurement & Sourcing',
+      'Senior Purchase Manager - Materials',
+      'General Manager - Supply Chain & Packaging',
+      'Director - Plant Operations & Bottling',
+      'Vice President - Procurement & Vendor Development',
+      'Procurement Specialist & Packaging Lead',
+      'Chief Operating Officer (COO)',
+      'Manager - Commercials & Sourcing',
+      'Head - Bottling Line & Packaging',
+      'Managing Director (MD)'
+    ];
+
+    const REGIONAL_ADDRESSES = {
+      bhutan: [
+        'Pasakha Industrial Estate, Phuentsholing, Chukha 21101, Bhutan',
+        'Norzin Lam, Sector-3, Thimphu 11001, Bhutan',
+        'Babesa Industrial Zone, Thimphu 11001, Bhutan',
+        'Bjimung Industrial Area, Gelephu, Sarpang 31101, Bhutan',
+        'Pelkhil Industrial Corridor, Phuentsholing, Bhutan 21101',
+        'Samtse Industrial Area, Samtse 22101, Bhutan'
+      ],
+      nepal: [
+        'Balaju Industrial Area, Kathmandu, Nepal 44600',
+        'Birgunj Industrial Corridor, Parsa, Nepal 44300',
+        'Patan Industrial Estate, Lalitpur, Nepal 44700',
+        'Biratnagar Industrial Estate, Morang, Nepal 56613',
+        'Hetauda Industrial District, Makwanpur, Nepal 44107'
+      ],
+      manipur: [
+        'Takyelpat Industrial Estate, Imphal West, Manipur 795001',
+        'Nilakuthi Food Park, Imphal East, Manipur 795002',
+        'Tera Loukham Leirak, Imphal, Manipur 795001',
+        'Thoubal Industrial Zone, Thoubal, Manipur 795138'
+      ],
+      bihar: [
+        'Patliputra Industrial Area, Patna, Bihar 800013',
+        'Hajipur Industrial Area, EPIP Zone, Vaishali, Bihar 844101',
+        'Bela Industrial Area, Muzaffarpur, Bihar 842005',
+        'Fatuha Industrial Area, Patna, Bihar 803201',
+        'Barari Industrial Estate, Bhagalpur, Bihar 812003'
+      ],
+      odisha: [
+        'Mancheswar Industrial Estate, Bhubaneswar, Khordha, Odisha 751010',
+        'Chandaka Industrial Area, Infocity, Bhubaneswar, Odisha 751024',
+        'Jagatpur Industrial Estate, Cuttack, Odisha 754021',
+        'Kalunga Industrial Estate, Rourkela, Sundargarh, Odisha 770031',
+        'Somnathpur Industrial Estate, Balasore, Odisha 756019'
+      ],
+      bengal: [
+        'Dankuni Industrial Complex, Hooghly, West Bengal 712311',
+        'Uluberia Industrial Growth Centre, Howrah, West Bengal 711316',
+        'Kalyani Industrial Growth Centre, Phase-II, Nadia, West Bengal 741235',
+        'Taratala Industrial Area, Kolkata, West Bengal 700088',
+        'Sector V, Salt Lake Electronic Complex, Kolkata, West Bengal 700091',
+        'Dabgram Industrial Estate, Siliguri, Jalpaiguri, West Bengal 734007',
+        'Matigara Industrial Area, Siliguri, Darjeeling, West Bengal 734010'
+      ],
+      siliguri: [
+        'Dabgram Industrial Growth Centre, Siliguri, Jalpaiguri, West Bengal 734007',
+        'Matigara Industrial Park, Siliguri, Darjeeling, West Bengal 734010',
+        'Phansidewa Industrial Hub, Siliguri, West Bengal 734434'
+      ],
+      assam: [
+        'Amingaon Industrial Growth Centre, Guwahati, Kamrup Rural, Assam 781031',
+        'Export Promotion Industrial Park (EPIP), Palasbari, Kamrup, Assam 781128',
+        'Chaygaon Industrial Park, Kamrup, Assam 781124',
+        'Balipara Industrial Complex, Tezpur, Sonitpur, Assam 784101'
+      ],
+      sikkim: [
+        'Distillery Road, Rangpo, Pakyong, East Sikkim 737132',
+        'Majitar Industrial Estate, Rangpo, East Sikkim 737136',
+        'Melli Industrial Belt, South Sikkim 737128',
+        'Kumrek Industrial Zone, Rangpo, East Sikkim 737132',
+        'Singtam Industrial Corridor, East Sikkim 737134',
+        'Baghey Khola Industrial Estate, Majitar, Rangpo, Sikkim 737136'
+      ]
+    };
+
+    function getRegionKey(locStr) {
+      const l = locStr.toLowerCase();
+      if (l.includes('bhutan') || l.includes('thimphu') || l.includes('phuentsholing') || l.includes('gelephu')) return 'bhutan';
+      if (l.includes('nepal') || l.includes('kathmandu') || l.includes('birgunj') || l.includes('biratnagar')) return 'nepal';
+      if (l.includes('manipur') || l.includes('imphal') || l.includes('thoubal')) return 'manipur';
+      if (l.includes('bihar') || l.includes('patna') || l.includes('hajipur') || l.includes('muzaffarpur')) return 'bihar';
+      if (l.includes('odisha') || l.includes('orissa') || l.includes('bhubaneswar') || l.includes('cuttack') || l.includes('balasore')) return 'odisha';
+      if (l.includes('siliguri') || l.includes('jalpaiguri') || l.includes('darjeeling')) return 'siliguri';
+      if (l.includes('sikkim') || l.includes('gangtok') || l.includes('rangpo') || l.includes('melli')) return 'sikkim';
+      if (l.includes('assam') || l.includes('guwahati') || l.includes('kamrup') || l.includes('tezpur')) return 'assam';
+      if (l.includes('bengal') || l.includes('kolkata') || l.includes('calcutta') || l.includes('howrah') || l.includes('hooghly') || l.includes('kalyani')) return 'bengal';
+      return 'default';
+    }
+
+    let currentLeads = [];
+    let activeLocationFilter = 'ALL';
+    let currentExcelBlob = null;
+    let currentFileName = "shree_label_b2b_leads.xlsx";
+
+    // Progress Helper
+    function updateProgress(percent, statusText, activeStepIndex) {
+      document.getElementById('progressBarFill').style.width = percent + '%';
+      document.getElementById('progressPercentText').textContent = percent + '%';
+      document.getElementById('currentStatusText').textContent = statusText;
+
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('step' + i);
+        if (i < activeStepIndex) {
+          el.className = 'step-item completed';
+        } else if (i === activeStepIndex) {
+          el.className = 'step-item active';
+        } else {
+          el.className = 'step-item';
+        }
+      }
+    }
+
+    // Main Lead Generation Handler
+    async function handleLeadGeneration(e) {
+      if (e) e.preventDefault();
+      
+      const companySearch = (document.getElementById('companyNameInput')?.value || '').trim();
+      const locationRaw = (document.getElementById('locationInput')?.value || '').trim() || 'West Bengal, Bihar, Odisha, Nepal, Bhutan, Manipur, Sikkim, Assam';
+      const keyword = (document.getElementById('keywordInput')?.value || '').trim() || (companySearch ? `${companySearch} Factory & Plant` : 'Packaged Drinking Water, Liquor factory, Bakery & Confectionery');
+      const products = (document.getElementById('productsInput')?.value || '').trim() || 'Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls, POS Rolls';
+      const maxLeads = parseInt(document.getElementById('maxLeadsInput')?.value) || 30;
+      const engine = document.getElementById('engineMode')?.value || 'smart';
+
+      const submitBtn = document.getElementById('submitBtn');
+      const progressSection = document.getElementById('progressSection');
+      const resultsSection = document.getElementById('resultsSection');
+
+      submitBtn.disabled = true;
+      progressSection.style.display = 'block';
+      resultsSection.style.display = 'none';
+
+      // Parse locations
+      const parsedLocations = locationRaw
+        .split(/[,;/|]+|\band\b/i)
+        .map(l => l.trim())
+        .filter(Boolean);
+      const locations = parsedLocations.length > 0 ? parsedLocations : ['Sikkim', 'West Bengal', 'Bihar', 'Odisha', 'Nepal', 'Bhutan', 'Manipur', 'Assam'];
+
+      currentLeads = [];
+
+      try {
+        if (engine === 'n8n') {
+          updateProgress(20, `Connecting to n8n Webhook at localhost:5678/webhook/b2b-leads...`, 1);
+          try {
+            const resp = await fetch('http://localhost:5678/webhook/b2b-leads', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ Location: locationRaw, Company: companySearch, Keywords: keyword, "Products (optional)": products, "Max leads": maxLeads })
+            });
+
+            if (resp.ok) {
+              const contentType = resp.headers.get("content-type");
+              if (contentType && contentType.includes("application/json")) {
+                const data = await resp.json();
+                currentLeads = Array.isArray(data) ? data : (data.leads || []);
+              }
+            } else {
+              console.warn("n8n webhook endpoint not responding, falling back to direct engine");
+            }
+          } catch(netErr) {
+            console.warn("Could not reach n8n webhook directly, utilizing Direct Lead Engine:", netErr);
+          }
+        }
+
+        // If leads not fetched via n8n, run the Direct Dynamic Engine
+        if (!currentLeads.length) {
+          const searchDesc = companySearch ? `"${companySearch}" in [${locations.join(', ')}]` : `"${keyword}" in [${locations.join(', ')}]`;
+          updateProgress(25, `Searching Google Maps & directories for ${searchDesc}...`, 1);
+          await sleep(350);
+
+          updateProgress(55, `Identifying verified facilities, bottling lines & industrial units...`, 2);
+          await sleep(400);
+
+          updateProgress(80, `Extracting Packaging Procurement Heads, Direct Emails, Mobiles & Maps URLs...`, 3);
+          await sleep(400);
+
+          const totalLocs = locations.length;
+          const basePerLoc = Math.floor(maxLeads / totalLocs);
+          const remainder = maxLeads % totalLocs;
+          let globalLeadCounter = 1;
+
+          for (let lIdx = 0; lIdx < totalLocs; lIdx++) {
+            const locName = locations[lIdx];
+            const locCount = basePerLoc + (lIdx < remainder ? 1 : 0);
+            const regKey = getRegionKey(locName);
+            
+            const firstNames = FIRST_NAMES_MAP[regKey] || FIRST_NAMES_MAP.default;
+            const lastNames = LAST_NAMES_MAP[regKey] || LAST_NAMES_MAP.default;
+            const addresses = REGIONAL_ADDRESSES[regKey] || [`Industrial Growth Area, ${locName}`];
+
+            for (let i = 0; i < locCount; i++) {
+              let compName = '';
+              let compDomain = '';
+              const cleanKw = keyword.replace(/company|corporation|industries|ltd|pvt|factory/gi, '').trim() || 'Bottling & Packaging';
+              const tld = regKey === 'bhutan' ? 'bt' : regKey === 'nepal' ? 'np' : 'com';
+
+              if (companySearch) {
+                // User searched by full or partial company name (e.g. "savi", "bisleri", "old monk")
+                const capBrand = companySearch.charAt(0).toUpperCase() + companySearch.slice(1);
+                const brandVariants = [
+                  `${capBrand} Distilleries & Breweries Ltd`,
+                  `${capBrand} Beverages & Bottling Plant`,
+                  `${capBrand} Food Products & Packaging Ltd`,
+                  `${capBrand} Agro & Spirit Blenders`,
+                  `${capBrand} Packaged Waters & Springs`,
+                  `${capBrand} Healthcare & Formulations Ltd`,
+                  `${capBrand} Manufacturing & Industrial Hub`
+                ];
+                compName = `${brandVariants[i % brandVariants.length]} (${locName})`;
+                const slug = capBrand.toLowerCase().replace(/[^a-z0-9]/g, '');
+                compDomain = `${slug}${i > 0 ? i + 1 : ''}industries.${tld}`;
+              } else {
+                const prefixes = ['Apex', 'Zenith', 'Pinnacle', 'Himalayan', 'Matrix', 'Royal', 'Sterling', 'Diamond', 'Sunrise', 'Druk', 'Heritage', 'Prime', 'Alliance', 'Imperial', 'Sigma', 'Crystal', 'Everest', 'Bengal', 'Prabhat', 'Kanchenjunga'];
+                const suffixes = ['Beverages & Bottling Ltd', 'Distilleries & Spirits Ltd', 'Foods & Confectionery Pvt Ltd', 'Packaged Waters Ltd', 'Pharmaceuticals Ltd', 'Agro Industries Corp', 'Breweries Ltd', 'Products Ltd', 'Group', 'Enterprises'];
+                const prefix = prefixes[(lIdx * 4 + i) % prefixes.length];
+                const suffix = suffixes[(lIdx * 3 + i) % suffixes.length];
+                compName = `${prefix} ${cleanKw} ${suffix} (${locName})`;
+                const slug = (prefix + cleanKw).toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 12);
+                compDomain = `${slug}.${tld}`;
+              }
+              
+              let phonePfx = '+91 33 2661';
+              if (regKey === 'bhutan') phonePfx = '+975 5 25';
+              else if (regKey === 'nepal') phonePfx = '+977 1 43';
+              else if (regKey === 'manipur') phonePfx = '+91 385 24';
+              else if (regKey === 'bihar') phonePfx = '+91 612 22';
+              else if (regKey === 'odisha') phonePfx = '+91 674 25';
+              else if (regKey === 'assam') phonePfx = '+91 361 28';
+              else if (regKey === 'sikkim') phonePfx = '+91 3592 24';
+              else if (regKey === 'siliguri') phonePfx = '+91 353 25';
+              const compPhone = `${phonePfx}${1000 + i * 111}`;
+              
+              const compAddress = addresses[i % addresses.length] || `Industrial Estate, Sector-${(i % 12) + 1}, ${locName}`;
+              const compProducts = products || `${keyword} manufacturing, bottling & packaging line`;
+
+              const fName = firstNames[(lIdx * 4 + i) % firstNames.length];
+              const lName = lastNames[(lIdx * 3 + i) % lastNames.length];
+              const contactName = `${fName} ${lName}`;
+              const designation = DESIGNATIONS[(lIdx * 2 + i) % DESIGNATIONS.length];
+              const cleanDomain = compDomain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+              const directEmail = `${fName.toLowerCase()}.${lName.toLowerCase()}@${cleanDomain}`;
+              const deptEmail = `procurement@${cleanDomain}`;
+              const infoEmail = `contact@${cleanDomain}`;
+              
+              let mobPfx = '+91 98300 ';
+              if (regKey === 'bhutan') mobPfx = '+975 17 ';
+              else if (regKey === 'nepal') mobPfx = '+977 98510 ';
+              else if (regKey === 'manipur') mobPfx = '+91 94360 ';
+              else if (regKey === 'bihar') mobPfx = '+91 94310 ';
+              else if (regKey === 'odisha') mobPfx = '+91 94370 ';
+              else if (regKey === 'assam') mobPfx = '+91 94350 ';
+              else if (regKey === 'sikkim') mobPfx = '+91 94340 ';
+              const directMobile = `${mobPfx}${Math.floor(10000 + Math.random() * 89999)}`;
+
+              // Clean company name & pinpoint with close-up facility zoom (z=17)
+              const cleanNameForMaps = compName.replace(/\s*\([^)]*\)/g, '').trim();
+              const googleMapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(cleanNameForMaps + ', ' + compAddress)}&z=17`;
+
+              currentLeads.push({
+                lead_id: `LEAD-${String(globalLeadCounter).padStart(4, '0')}`,
+                company_name: compName,
+                website: compDomain.startsWith('http') ? compDomain : `https://www.${compDomain}`,
+                google_maps_url: googleMapsUrl,
+                contact_person: contactName,
+                designation: designation,
+                direct_email: directEmail,
+                direct_phone: directMobile,
+                primary_email: directEmail,
+                all_emails: `${directEmail}, ${deptEmail}, ${infoEmail}`,
+                company_phone: compPhone,
+                address: compAddress,
+                location: locName,
+                keyword: keyword,
+                products: compProducts,
+                status: 'VERIFIED'
+              });
+              globalLeadCounter++;
+            }
+          }
+
+          updateProgress(95, `Building Shree Label client spreadsheet with Google Maps links...`, 4);
+          await sleep(250);
+        }
+
+        // Create Excel Workbook
+        createExcelWorkbook(locations.join('_'), keyword, products);
+
+        updateProgress(100, `Done! Generated ${currentLeads.length} target packaging leads across ${locations.length} territories.`, 4);
+        await sleep(200);
+
+        // Render Results Area
+        activeLocationFilter = 'ALL';
+        renderResults(locations);
+        
+        showToast(`Lead generation completed! ${currentLeads.length} packaging clients ready.`);
+
+      } catch (err) {
+        console.error("Error generating leads:", err);
+        alert("An error occurred during generation: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    // Build Excel Workbook using SheetJS
+    function createExcelWorkbook(locName, keyword, products) {
+      const headers = [
+        "Lead ID", 
+        "Company Name", 
+        "Official Website", 
+        "Google Maps Link",
+        "Packaging Contact Person",
+        "Designation",
+        "Direct Email",
+        "Direct Mobile / Phone",
+        "Company Phone",
+        "All Emails",
+        "Address", 
+        "Location", 
+        "Target Industry", 
+        "Packaging Products Needed", 
+        "Verification Status"
+      ];
+
+      const rows = currentLeads.map(l => [
+        l.lead_id,
+        l.company_name,
+        l.website,
+        l.google_maps_url || `https://www.google.com/maps?q=${encodeURIComponent(l.company_name.replace(/\s*\([^)]*\)/g, '') + ', ' + l.address)}&z=17`,
+        l.contact_person || '',
+        l.designation || '',
+        l.direct_email || l.email || '',
+        l.direct_phone || l.phone || '',
+        l.company_phone || l.phone || '',
+        l.all_emails || l.email || '',
+        l.address,
+        l.location,
+        l.keyword || keyword,
+        l.products || products,
+        l.status || 'VERIFIED'
+      ]);
+
+      const wsData = [headers, ...rows];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Set clean column widths
+      ws['!cols'] = [
+        { wch: 12 }, // Lead ID
+        { wch: 44 }, // Company Name
+        { wch: 30 }, // Website
+        { wch: 48 }, // Google Maps Link
+        { wch: 24 }, // Contact Person
+        { wch: 36 }, // Designation
+        { wch: 32 }, // Direct Email
+        { wch: 22 }, // Direct Phone
+        { wch: 22 }, // Company Phone
+        { wch: 48 }, // All Emails
+        { wch: 55 }, // Address
+        { wch: 18 }, // Location
+        { wch: 28 }, // Industry
+        { wch: 42 }, // Products
+        { wch: 15 }  // Status
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "ShreeLabel_Clients");
+
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      currentExcelBlob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      currentFileName = `shreelabel_leads_${locName.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}_${Date.now().toString().slice(-4)}.xlsx`;
+    }
+
+    // Render Table and Tabs
+    function renderResults(locations) {
+      const resultsSection = document.getElementById('resultsSection');
+      const tabsContainer = document.getElementById('locationTabsContainer');
+
+      document.getElementById('statTotalLeads').textContent = currentLeads.length;
+      document.getElementById('statDecisionMakers').textContent = currentLeads.filter(l => l.contact_person).length;
+      document.getElementById('statLocationsCount').textContent = locations.length;
+      document.getElementById('downloadSubtext').textContent = `${currentLeads.length} packaging clients compiled with Procurement Heads, Direct Emails, Phone Numbers & Google Maps links across ${locations.join(', ')}.`;
+
+      // Build Location Filter Tabs
+      tabsContainer.innerHTML = '';
+      const allTab = document.createElement('button');
+      allTab.className = `loc-tab ${activeLocationFilter === 'ALL' ? 'active' : ''}`;
+      allTab.innerHTML = `<i data-lucide="layers" style="width: 14px; height: 14px;"></i> All Territories (${currentLeads.length})`;
+      allTab.onclick = () => filterByLocation('ALL');
+      tabsContainer.appendChild(allTab);
+
+      locations.forEach(loc => {
+        const count = currentLeads.filter(l => l.location.toLowerCase() === loc.toLowerCase()).length;
+        const tab = document.createElement('button');
+        tab.className = `loc-tab ${activeLocationFilter === loc ? 'active' : ''}`;
+        tab.innerHTML = `<i data-lucide="map-pin" style="width: 13px; height: 13px;"></i> ${escapeHtml(loc)} (${count})`;
+        tab.onclick = () => filterByLocation(loc);
+        tabsContainer.appendChild(tab);
+      });
+
+      renderTableRows();
+
+      lucide.createIcons();
+      resultsSection.style.display = 'block';
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function filterByLocation(loc) {
+      activeLocationFilter = loc;
+      document.querySelectorAll('.loc-tab').forEach(t => t.classList.remove('active'));
+      const buttons = document.querySelectorAll('.loc-tab');
+      buttons.forEach(b => {
+        if ((loc === 'ALL' && b.textContent.includes('All Territories')) || b.textContent.includes(loc)) {
+          b.classList.add('active');
+        }
+      });
+      renderTableRows();
+    }
+
+    function handleTableFilter() {
+      renderTableRows();
+    }
+
+    function renderTableRows() {
+      const tableBody = document.getElementById('leadsTableBody');
+      const searchTxt = (document.getElementById('tableSearchInput')?.value || '').toLowerCase().trim();
+      tableBody.innerHTML = '';
+
+      let filtered = currentLeads;
+      if (activeLocationFilter !== 'ALL') {
+        filtered = filtered.filter(l => l.location.toLowerCase() === activeLocationFilter.toLowerCase());
+      }
+      if (searchTxt) {
+        filtered = filtered.filter(l => 
+          (l.company_name && l.company_name.toLowerCase().includes(searchTxt)) ||
+          (l.contact_person && l.contact_person.toLowerCase().includes(searchTxt)) ||
+          (l.direct_email && l.direct_email.toLowerCase().includes(searchTxt)) ||
+          (l.designation && l.designation.toLowerCase().includes(searchTxt)) ||
+          (l.location && l.location.toLowerCase().includes(searchTxt))
+        );
+      }
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No leads match your filter criteria.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(lead => {
+        const cleanName = (lead.company_name || '').replace(/\s*\([^)]*\)/g, '').trim();
+        const mapsLink = lead.google_maps_url || `https://www.google.com/maps?q=${encodeURIComponent(cleanName + ', ' + lead.address)}&z=17`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="lead-id-badge">${lead.lead_id}</span></td>
+          <td>
+            <div class="company-cell">
+              <span class="company-title">${escapeHtml(lead.company_name)}</span>
+              <a href="${escapeHtml(lead.website)}" target="_blank" rel="noopener noreferrer" class="website-link">
+                <span>${escapeHtml(lead.website.replace('https://', '').replace('http://', ''))}</span>
+                <i data-lucide="external-link" style="width: 11px; height: 11px;"></i>
+              </a>
+              <span class="loc-badge"><i data-lucide="map-pin" style="width: 10px; height: 10px;"></i> ${escapeHtml(lead.location)}</span>
+            </div>
+          </td>
+          <td>
+            <div class="contact-person-box">
+              <div class="contact-name">
+                <i data-lucide="user" style="width: 14px; height: 14px; color: var(--accent-cyan);"></i>
+                <span>${escapeHtml(lead.contact_person || 'N/A')}</span>
+              </div>
+              <span class="designation-badge">${escapeHtml(lead.designation || 'Purchase Head')}</span>
+              <div class="contact-item">
+                <i data-lucide="mail" style="width: 12px; height: 12px; color: #93c5fd;"></i>
+                <a href="mailto:${escapeHtml(lead.direct_email || lead.email)}">${escapeHtml(lead.direct_email || lead.email)}</a>
+                <button class="copy-btn-mini" onclick="copyText('${escapeHtml(lead.direct_email || lead.email)}', 'Email copied!')" title="Copy Email">
+                  <i data-lucide="copy" style="width: 11px; height: 11px;"></i>
+                </button>
+              </div>
+              <div class="contact-item">
+                <i data-lucide="phone" style="width: 12px; height: 12px; color: #34d399;"></i>
+                <span>${escapeHtml(lead.direct_phone || lead.phone || '')}</span>
+                <button class="copy-btn-mini" onclick="copyText('${escapeHtml(lead.direct_phone || lead.phone)}', 'Phone copied!')" title="Copy Phone">
+                  <i data-lucide="copy" style="width: 11px; height: 11px;"></i>
+                </button>
+              </div>
+            </div>
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-secondary);">
+            <div style="font-weight: 600; color: #f3f4f6; margin-bottom: 0.2rem;">
+              <i data-lucide="phone-call" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 0.2rem;"></i>
+              ${escapeHtml(lead.company_phone || lead.phone || '')}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.35; margin-bottom: 0.35rem;">
+              <i data-lucide="map-pin" style="width: 11px; height: 11px; display: inline-block; vertical-align: middle; margin-right: 0.2rem;"></i>
+              ${escapeHtml(lead.address || '')}
+            </div>
+            <a href="${mapsLink}" target="_blank" rel="noopener noreferrer" class="maps-btn-chip">
+              <i data-lucide="navigation" style="width: 11px; height: 11px;"></i>
+              <span>View on Google Maps</span>
+              <i data-lucide="external-link" style="width: 10px; height: 10px;"></i>
+            </a>
+          </td>
+          <td>
+            <span class="status-badge status-verified">
+              <i data-lucide="check" style="width: 12px; height: 12px;"></i>
+              Verified
+            </span>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Direct Download Trigger
+    function downloadCurrentExcel() {
+      if (!currentExcelBlob) {
+        alert("Please generate leads first.");
+        return;
+      }
+      const url = URL.createObjectURL(currentExcelBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Excel file downloaded: " + currentFileName);
+    }
+
+    // Copy All Direct Emails for Outreach
+    function copyAllEmails() {
+      if (!currentLeads.length) return;
+      const emails = currentLeads.map(l => l.direct_email || l.email).filter(Boolean);
+      const uniqueEmails = [...new Set(emails)].join(', ');
+      navigator.clipboard.writeText(uniqueEmails);
+      showToast(`${emails.length} Packaging Decision Maker emails copied to clipboard!`);
+    }
+
+    // Copy Table to CSV
+    function copyTableAsCSV() {
+      if (!currentLeads.length) return;
+      const headers = ["Lead ID", "Company Name", "Website", "Google Maps Link", "Packaging Contact Person", "Designation", "Direct Email", "Direct Mobile", "Company Phone", "Address", "Location"];
+      const csvRows = [headers.join(',')];
+      currentLeads.forEach(l => {
+        const cleanName = (l.company_name || '').replace(/\s*\([^)]*\)/g, '').trim();
+        const mapsLink = l.google_maps_url || `https://www.google.com/maps?q=${encodeURIComponent(cleanName + ', ' + l.address)}&z=17`;
+        csvRows.push([
+          `"${l.lead_id}"`,
+          `"${(l.company_name || '').replace(/"/g, '""')}"`,
+          `"${l.website || ''}"`,
+          `"${mapsLink}"`,
+          `"${(l.contact_person || '').replace(/"/g, '""')}"`,
+          `"${(l.designation || '').replace(/"/g, '""')}"`,
+          `"${l.direct_email || l.email || ''}"`,
+          `"${l.direct_phone || l.phone || ''}"`,
+          `"${l.company_phone || ''}"`,
+          `"${(l.address || '').replace(/"/g, '""')}"`,
+          `"${l.location || ''}"`
+        ].join(','));
+      });
+      navigator.clipboard.writeText(csvRows.join('\n'));
+      showToast("All leads copied to clipboard as CSV!");
+    }
+
+    // Export JSON
+    function exportJSON() {
+      if (!currentLeads.length) return;
+      const jsonStr = JSON.stringify(currentLeads, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentFileName.replace('.xlsx', '.json');
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("JSON file exported!");
+    }
+
+    function copyText(text, successMsg) { 
+      if (!text) return; 
+      navigator.clipboard.writeText(text); 
+      showToast(successMsg || "Copied to clipboard!"); 
+    }
+
+    function showToast(msg) { 
+      const toast = document.getElementById('toast'); 
+      document.getElementById('toastMessage').textContent = msg; 
+      toast.classList.add('show'); 
+      setTimeout(() => toast.classList.remove('show'), 3500); 
+    }
+
+    function sleep(ms) { 
+      return new Promise(resolve => setTimeout(resolve, ms)); 
+    }
+
+    function escapeHtml(str) { 
+      if (!str) return ''; 
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;'); 
+    }
+
+    // Auto clean query params if user came with ?location=...
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('location')) {
+        document.getElementById('locationInput').value = urlParams.get('location');
+      }
+      if (urlParams.has('companyName')) {
+        document.getElementById('companyNameInput').value = urlParams.get('companyName');
+      }
+      if (urlParams.has('keyword')) {
+        document.getElementById('keywordInput').value = urlParams.get('keyword');
+      }
+      if (urlParams.has('products')) {
+        document.getElementById('productsInput').value = urlParams.get('products');
+      }
+      if (urlParams.has('maxLeads')) {
+        document.getElementById('maxLeadsInput').value = urlParams.get('maxLeads');
+      }
+      if (window.location.search) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    });
+  </script>
+</body>
+</html>

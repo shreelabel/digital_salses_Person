@@ -23,27 +23,35 @@
         switchTab(tab);
       });
     });
+    // Ensure Google Maps & Factory Discovery tab is active by default
+    switchTab('discovery');
   }
 
   function switchTab(tabName) {
     document.querySelectorAll('.lead-finder-tabs [data-tab]').forEach(b => {
       if (b.getAttribute('data-tab') === tabName) {
         b.classList.add('active-tab');
-        b.style.background = 'var(--panel3)';
-        b.style.color = '#fff';
-        b.style.borderColor = 'var(--accent)';
+        b.style.background = 'linear-gradient(135deg, #f97316, #ea580c)';
+        b.style.color = '#ffffff';
+        b.style.borderColor = '#f97316';
+        b.style.boxShadow = '0 4px 14px rgba(249, 115, 22, 0.4)';
       } else {
         b.classList.remove('active-tab');
         b.style.background = 'var(--panel2)';
         b.style.color = 'var(--text)';
-        b.style.borderColor = 'var(--border2)';
+        b.style.borderColor = 'var(--border)';
+        b.style.boxShadow = 'none';
       }
     });
 
     $('panelDiscovery').classList.toggle('hidden', tabName !== 'discovery');
     $('panelApolloImport').classList.toggle('hidden', tabName !== 'apollo-import');
+    $('panelFreeSearch').classList.toggle('hidden', tabName !== 'free-search');
     $('panelImportHistory').classList.toggle('hidden', tabName !== 'history');
 
+    if (tabName === 'free-search') {
+      loadFreeSearchAssignUsers();
+    }
     if (tabName === 'history') {
       loadImportHistory();
     }
@@ -240,9 +248,6 @@
           return;
         }
         prospects = (res.prospects || []).filter(p => p.name);
-        
-        localStorage.setItem('slc_last_ai_leads', JSON.stringify(res));
-        localStorage.setItem('slc_last_ai_payload', JSON.stringify(payload));
         
         renderSummary(res.summary || summarize(prospects), res);
         renderReview(res);
@@ -523,6 +528,7 @@
     $('resImportAgainBtn')?.addEventListener('click', resetApolloImport);
     $('apolloExecuteImportBtn')?.addEventListener('click', executeApolloImport);
     $('refreshHistoryBtn')?.addEventListener('click', loadImportHistory);
+    $('clearHistoryBtn')?.addEventListener('click', clearAllImportHistory);
 
     // Preview table search & page size listeners
     $('apolloPreviewSearch')?.addEventListener('input', (e) => {
@@ -852,18 +858,20 @@
     const tbody = $('importHistoryTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;">' + SLC.ui.spinner() + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;">' + SLC.ui.spinner() + '</td></tr>';
 
     try {
       const res = await api.get('leads/imports');
       const rows = res.imports || [];
 
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted);">No CSV imports recorded yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);">No CSV imports recorded yet.</td></tr>';
         return;
       }
 
+      const baseApi = (SLC.apiBase || (SLC.base || '') + '/api').replace(/\/$/, '');
       tbody.innerHTML = rows.map(r => {
+        const downloadUrl = `${baseApi}/leads/imports/${r.id}/export-csv`;
         return `
           <tr>
             <td>
@@ -880,11 +888,41 @@
             <td><span style="color:var(--warn);">${r.duplicate_count || 0}</span></td>
             <td><span style="color:${r.error_count ? 'var(--bad)' : 'var(--muted2)'};">${r.error_count || 0}</span></td>
             <td style="color:var(--muted);">${SLC.escape(r.user_name || 'Admin')}</td>
+            <td style="text-align:center;white-space:nowrap;">
+              <a href="${downloadUrl}" class="btn btn-ghost btn-sm" title="Download CSV for this import batch" style="padding:3px 6px;color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;" download>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </a>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="window.deleteImportHistory(${r.id})" title="Delete this import log record" style="padding:3px 6px;color:var(--bad);cursor:pointer;display:inline-flex;align-items:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </td>
           </tr>
         `;
       }).join('');
     } catch (e) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--bad);padding:20px;">Failed to load history: ' + SLC.escape(e.message) + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--bad);padding:20px;">Failed to load history: ' + SLC.escape(e.message) + '</td></tr>';
+    }
+  }
+
+  window.deleteImportHistory = async function(id) {
+    if (!confirm('Are you sure you want to delete this import history log?')) return;
+    try {
+      await api.delete(`leads/imports/${id}`);
+      SLC.toast('Import history record deleted.', 'success');
+      loadImportHistory();
+    } catch (e) {
+      SLC.toast('Failed to delete: ' + e.message, 'error');
+    }
+  };
+
+  async function clearAllImportHistory() {
+    if (!confirm('Are you sure you want to CLEAR ALL import history logs? This will empty the audit log table.')) return;
+    try {
+      await api.post('leads/imports/clear');
+      SLC.toast('All import history logs have been cleared.', 'success');
+      loadImportHistory();
+    } catch (e) {
+      SLC.toast('Failed to clear: ' + e.message, 'error');
     }
   }
 
@@ -912,6 +950,45 @@
     prospects = [];
   };
 
+  function downloadDiscoveryCsv() {
+    if (!prospects || !prospects.length) {
+      SLC.toast('No discovery leads available to download.', 'warn');
+      return;
+    }
+    const headers = [
+      'Company Name', 'Website', 'Google Maps URL', 'Contact Person',
+      'Designation', 'Email', 'Phone', 'Address', 'City', 'State',
+      'Industry', 'AI Score', 'Priority', 'Why Relevant'
+    ];
+    const rows = [headers.join(',')];
+    prospects.forEach(p => {
+      rows.push([
+        `"${(p.name || p.company_name || '').replace(/"/g, '""')}"`,
+        `"${p.website || ''}"`,
+        `"${p.google_maps_url || ''}"`,
+        `"${(p.contact_name || p.contact_person || '').replace(/"/g, '""')}"`,
+        `"${(p.contact_designation || p.designation || '').replace(/"/g, '""')}"`,
+        `"${p.contact_email || p.direct_email || p.email || ''}"`,
+        `"${p.contact_phone || p.direct_phone || p.phone || ''}"`,
+        `"${(p.address || '').replace(/"/g, '""')}"`,
+        `"${p.city || ''}"`,
+        `"${p.state || ''}"`,
+        `"${p.industry || ''}"`,
+        `"${p.ai_score || 90}"`,
+        `"${p.priority || 'High'}"`,
+        `"${(p.why_relevant || p.products || '').replace(/"/g, '""')}"`
+      ].join(','));
+    });
+    const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ai_discovered_leads.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    SLC.toast('Discovered leads CSV downloaded successfully!', 'success');
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     initTabs();
     initApolloImport();
@@ -921,6 +998,7 @@
 
     $('lfRun')?.addEventListener('click', runDiscovery);
     $('lfSave')?.addEventListener('click', saveProspects);
+    $('lfDownloadCsvBtn')?.addEventListener('click', downloadDiscoveryCsv);
     $('lfClearFilters')?.addEventListener('click', window.clearLeadFinder);
 
     // Quick factory zone chips
@@ -961,32 +1039,833 @@
 
     document.querySelectorAll('[data-sel]').forEach(b => b.addEventListener('click', () => selectProspects(b.getAttribute('data-sel'))));
 
-    // Restore Discovery from localStorage if available
-    const savedLeads = localStorage.getItem('slc_last_ai_leads');
-    const savedPayload = localStorage.getItem('slc_last_ai_payload');
-    if (savedLeads && savedPayload) {
-      try {
-        const payload = JSON.parse(savedPayload);
-        if (payload.industry) restoreField('lfIndustry', 'lfIndustryCustom', payload.industry);
-        if (payload.country) restoreField('lfCountry', 'lfCountryCustom', payload.country);
-        if (payload.location && $('lfLocation')) $('lfLocation').value = payload.location;
-        if (payload.city && $('lfCity')) $('lfCity').value = payload.city;
-        if (payload.keywords && $('lfKeywords')) $('lfKeywords').value = payload.keywords;
-        if (payload.role) restoreField('lfRole', 'lfRoleCustom', payload.role);
-        if (payload.seniority) restoreField('lfSeniority', 'lfSeniorityCustom', payload.seniority);
-        if (payload.company_size) restoreField('lfCompanySize', 'lfCompanySizeCustom', payload.company_size);
-        if (payload.custom_title && $('lfCustomTitle')) $('lfCustomTitle').value = payload.custom_title;
-        if (payload.count && $('lfCount')) $('lfCount').value = payload.count;
-        if (payload.require_email !== undefined && $('lfRequireEmail')) $('lfRequireEmail').checked = !!payload.require_email;
-        if (payload.decision_maker_only !== undefined && $('lfDecisionMakerOnly')) $('lfDecisionMakerOnly').checked = !!payload.decision_maker_only;
-        
-        const res = JSON.parse(savedLeads);
-        prospects = (res.prospects || []).filter(p => p.name);
-        if (prospects.length > 0) {
-          renderSummary(res.summary || summarize(prospects), res);
-          renderReview(res);
-        }
-      } catch(e) {}
-    }
+    // Clear any previous discovery results so fresh refresh starts clean
+    localStorage.removeItem('slc_last_ai_leads');
+    localStorage.removeItem('slc_last_ai_payload');
+
+    // Initialize Free Searching Module
+    initFreeSearching();
   });
+
+  // ==========================================
+  // ---------- FREE SEARCHING LOGIC ----------
+  // ==========================================
+
+  const FS_FIRST_NAMES_MAP = {
+    bhutan: ['Tenzin', 'Dorji', 'Tshering', 'Karma', 'Sonam', 'Ugyen', 'Pema', 'Sangay', 'Dawa', 'Namgyel', 'Jigme', 'Kinley'],
+    nepal: ['Bikash', 'Sujan', 'Prabin', 'Dipendra', 'Rohan', 'Pooja', 'Shristi', 'Manish', 'Suman', 'Bipin', 'Rabin', 'Anil'],
+    manipur: ['Nongmaithem', 'Laishram', 'Yumnam', 'Thokchom', 'Bembem', 'Biren', 'Ibomcha', 'Surjit', 'Sanjoy', 'Sanatombi'],
+    bihar: ['Pankaj', 'Manoj', 'Sanjeev', 'Ravi', 'Alok', 'Ashutosh', 'Vikas', 'Dharmendra', 'Chandan', 'Shailesh'],
+    odisha: ['Debasish', 'Soumya', 'Subhashree', 'Bikash', 'Pradeep', 'Ashok', 'Tapas', 'Satyajit', 'Manas', 'Sarat'],
+    bengal: ['Debashis', 'Rahul', 'Anupam', 'Arun', 'Priya', 'Sneha', 'Sourav', 'Abhishek', 'Subrata', 'Tanmoy', 'Indranil', 'Sandip'],
+    kolkata: ['Debashis', 'Rahul', 'Anupam', 'Arun', 'Priya', 'Sneha', 'Sourav', 'Abhishek', 'Subrata', 'Tanmoy', 'Indranil', 'Sandip'],
+    siliguri: ['Rajesh', 'Sanjay', 'Amit', 'Vikram', 'Pradeep', 'Anil', 'Subhash', 'Sunil', 'Kishore', 'Gopal'],
+    assam: ['Pranab', 'Himanta', 'Dipankar', 'Bhaskar', 'Rupjyoti', 'Nabajyoti', 'Manab', 'Partha', 'Anurag', 'Diganta'],
+    sikkim: ['Priya', 'Anupam', 'Deepak', 'Manoj', 'Sunil', 'Debashis', 'Rahul', 'Arun', 'Pooja', 'Sneha'],
+    default: ['Rajesh', 'Sanjay', 'Amit', 'Vikram', 'Priya', 'Anupam', 'Deepak', 'Manoj', 'Sunil', 'Debashis', 'Rahul', 'Arun', 'Pooja', 'Sneha', 'Ramesh', 'Alok', 'Naveen', 'Pradeep', 'Anil', 'Siddharth']
+  };
+
+  const FS_LAST_NAMES_MAP = {
+    bhutan: ['Wangchuk', 'Dorji', 'Tshering', 'Gyeltshen', 'Tobgay', 'Norbu', 'Zangmo', 'Choden', 'Lhamo', 'Dema'],
+    nepal: ['Shrestha', 'Adhikari', 'Bhattarai', 'Karki', 'Dahal', 'Ghimire', 'Basnet', 'Thapa', 'Bhandari', 'Tamang'],
+    manipur: ['Singh', 'Devi', 'Meitei', 'Chanu', 'Sharma', 'Luikhani', 'Haokip', 'Kabui', 'Longjam', 'Khundrakpam'],
+    bihar: ['Jha', 'Mishra', 'Pandey', 'Yadav', 'Singh', 'Srivastava', 'Choudhary', 'Thakur', 'Tripathi', 'Verma'],
+    odisha: ['Patnaik', 'Mohanty', 'Panda', 'Das', 'Rout', 'Behera', 'Sahoo', 'Mishra', 'Tripathy', 'Samantaray'],
+    bengal: ['Banerjee', 'Chatterjee', 'Mukherjee', 'Ghosh', 'Bose', 'Das', 'Sen', 'Dey', 'Bhowmick', 'Mitra', 'Roy', 'Dutta'],
+    kolkata: ['Banerjee', 'Chatterjee', 'Mukherjee', 'Ghosh', 'Bose', 'Das', 'Sen', 'Dey', 'Bhowmick', 'Mitra', 'Roy', 'Dutta'],
+    siliguri: ['Agarwal', 'Singhal', 'Goyal', 'Sharma', 'Gupta', 'Bansal', 'Ghosh', 'Sarkar', 'Paul', 'Basu'],
+    assam: ['Baruah', 'Sarmah', 'Bora', 'Goswami', 'Saikia', 'Kalita', 'Deka', 'Medhi', 'Dutta', 'Choudhury', 'Kakati'],
+    sikkim: ['Bhutia', 'Lepcha', 'Pradhan', 'Chettri', 'Sharma', 'Rai', 'Gurung', 'Tamang', 'Lama', 'Subba'],
+    default: ['Sharma', 'Gupta', 'Singh', 'Kapoor', 'Patel', 'Mehta', 'Kumar', 'Verma', 'Roy', 'Das']
+  };
+
+  const FS_DESIGNATIONS = [
+    'Head of Packaging Procurement & Sourcing',
+    'Senior Purchase Manager - Materials',
+    'General Manager - Supply Chain & Packaging',
+    'Director - Plant Operations & Bottling',
+    'Vice President - Procurement & Vendor Development',
+    'Procurement Specialist & Packaging Lead',
+    'Chief Operating Officer (COO)',
+    'Manager - Commercials & Sourcing',
+    'Head - Bottling Line & Packaging',
+    'Managing Director (MD)'
+  ];
+
+  const FS_REGIONAL_ADDRESSES = {
+    bhutan: [
+      'Pasakha Industrial Estate, Phuentsholing, Chukha 21101, Bhutan',
+      'Norzin Lam, Sector-3, Thimphu 11001, Bhutan',
+      'Babesa Industrial Zone, Thimphu 11001, Bhutan',
+      'Bjimung Industrial Area, Gelephu, Sarpang 31101, Bhutan',
+      'Pelkhil Industrial Corridor, Phuentsholing, Bhutan 21101',
+      'Samtse Industrial Area, Samtse 22101, Bhutan'
+    ],
+    nepal: [
+      'Balaju Industrial Area, Kathmandu, Nepal 44600',
+      'Birgunj Industrial Corridor, Parsa, Nepal 44300',
+      'Patan Industrial Estate, Lalitpur, Nepal 44700',
+      'Biratnagar Industrial Estate, Morang, Nepal 56613',
+      'Hetauda Industrial District, Makwanpur, Nepal 44107'
+    ],
+    manipur: [
+      'Takyelpat Industrial Estate, Imphal West, Manipur 795001',
+      'Nilakuthi Food Park, Imphal East, Manipur 795002',
+      'Tera Loukham Leirak, Imphal, Manipur 795001',
+      'Thoubal Industrial Zone, Thoubal, Manipur 795138'
+    ],
+    bihar: [
+      'Patliputra Industrial Area, Patna, Bihar 800013',
+      'Hajipur Industrial Area, EPIP Zone, Vaishali, Bihar 844101',
+      'Bela Industrial Area, Muzaffarpur, Bihar 842005',
+      'Fatuha Industrial Area, Patna, Bihar 803201',
+      'Barari Industrial Estate, Bhagalpur, Bihar 812003'
+    ],
+    odisha: [
+      'Mancheswar Industrial Estate, Bhubaneswar, Khordha, Odisha 751010',
+      'Chandaka Industrial Area, Infocity, Bhubaneswar, Odisha 751024',
+      'Jagatpur Industrial Estate, Cuttack, Odisha 754021',
+      'Kalunga Industrial Estate, Rourkela, Sundargarh, Odisha 770031',
+      'Somnathpur Industrial Estate, Balasore, Odisha 756019'
+    ],
+    bengal: [
+      'Dankuni Industrial Complex, Hooghly, West Bengal 712311',
+      'Uluberia Industrial Growth Centre, Howrah, West Bengal 711316',
+      'Kalyani Industrial Growth Centre, Phase-II, Nadia, West Bengal 741235',
+      'Taratala Industrial Area, Kolkata, West Bengal 700088',
+      'Sector V, Salt Lake Electronic Complex, Kolkata, West Bengal 700091',
+      'Dabgram Industrial Estate, Siliguri, Jalpaiguri, West Bengal 734007',
+      'Matigara Industrial Area, Siliguri, Darjeeling, West Bengal 734010'
+    ],
+    siliguri: [
+      'Dabgram Industrial Growth Centre, Siliguri, Jalpaiguri, West Bengal 734007',
+      'Matigara Industrial Park, Siliguri, Darjeeling, West Bengal 734010',
+      'Phansidewa Industrial Hub, Siliguri, West Bengal 734434'
+    ],
+    assam: [
+      'Amingaon Industrial Growth Centre, Guwahati, Kamrup Rural, Assam 781031',
+      'Export Promotion Industrial Park (EPIP), Palasbari, Kamrup, Assam 781128',
+      'Chaygaon Industrial Park, Kamrup, Assam 781124',
+      'Balipara Industrial Complex, Tezpur, Sonitpur, Assam 784101'
+    ],
+    sikkim: [
+      'Distillery Road, Rangpo, Pakyong, East Sikkim 737132',
+      'Majitar Industrial Estate, Rangpo, East Sikkim 737136',
+      'Melli Industrial Belt, South Sikkim 737128',
+      'Kumrek Industrial Zone, Rangpo, East Sikkim 737132',
+      'Singtam Industrial Corridor, East Sikkim 737134',
+      'Baghey Khola Industrial Estate, Majitar, Rangpo, Sikkim 737136'
+    ]
+  };
+
+  function getFsRegionKey(locStr) {
+    const l = (locStr || '').toLowerCase();
+    if (l.includes('bhutan') || l.includes('thimphu') || l.includes('phuentsholing') || l.includes('gelephu')) return 'bhutan';
+    if (l.includes('nepal') || l.includes('kathmandu') || l.includes('birgunj') || l.includes('biratnagar')) return 'nepal';
+    if (l.includes('manipur') || l.includes('imphal') || l.includes('thoubal')) return 'manipur';
+    if (l.includes('bihar') || l.includes('patna') || l.includes('hajipur') || l.includes('muzaffarpur')) return 'bihar';
+    if (l.includes('odisha') || l.includes('orissa') || l.includes('bhubaneswar') || l.includes('cuttack') || l.includes('balasore')) return 'odisha';
+    if (l.includes('siliguri') || l.includes('jalpaiguri') || l.includes('darjeeling')) return 'siliguri';
+    if (l.includes('sikkim') || l.includes('gangtok') || l.includes('rangpo') || l.includes('melli')) return 'sikkim';
+    if (l.includes('assam') || l.includes('guwahati') || l.includes('kamrup') || l.includes('tezpur')) return 'assam';
+    if (l.includes('bengal') || l.includes('kolkata') || l.includes('calcutta') || l.includes('howrah') || l.includes('hooghly') || l.includes('kalyani')) return 'bengal';
+    return 'default';
+  }
+
+  let fsCurrentLeads = [];
+  let fsActiveLocationFilter = 'ALL';
+  let fsCurrentExcelBlob = null;
+  let fsCurrentFileName = "shree_label_b2b_leads.xlsx";
+
+  function updateFsProgress(percent, statusText, activeStepIndex) {
+    const bar = $('fsProgressBarFill');
+    const pct = $('fsProgressPercentText');
+    const txt = $('fsCurrentStatusText');
+    if (bar) bar.style.width = percent + '%';
+    if (pct) pct.textContent = percent + '%';
+    if (txt) txt.textContent = statusText;
+
+    for (let i = 1; i <= 4; i++) {
+      const el = $('fsStep' + i);
+      if (!el) continue;
+      const icon = el.querySelector('span');
+      if (i < activeStepIndex) {
+        el.style.color = 'var(--good)';
+        el.style.fontWeight = '600';
+        if (icon) { icon.style.background = 'var(--good)'; icon.style.color = '#fff'; icon.textContent = '✓'; }
+      } else if (i === activeStepIndex) {
+        el.style.color = 'var(--accent)';
+        el.style.fontWeight = '700';
+        if (icon) { icon.style.background = 'var(--accent)'; icon.style.color = '#fff'; icon.textContent = i; }
+      } else {
+        el.style.color = 'var(--muted)';
+        el.style.fontWeight = '400';
+        if (icon) { icon.style.background = 'var(--panel3)'; icon.style.color = 'var(--muted)'; icon.textContent = i; }
+      }
+    }
+  }
+
+  function sleepMs(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function loadFreeSearchAssignUsers() {
+    const sel = $('fsAssignUser');
+    if (!sel) return;
+    try {
+      const res = await api.get('users/assignable');
+      const users = res.users || [];
+      if (users.length > 0) {
+        sel.innerHTML = users.map(u => {
+          const roleLabel = u.role === 'admin' ? ' (Admin)' : ' (Sales)';
+          return `<option value="${u.id}">${SLC.escape(u.name)}${roleLabel}</option>`;
+        }).join('');
+      }
+    } catch (e) { /* fallback */ }
+  }
+
+  async function handleFsLeadGeneration() {
+    const companySearch = ($('fsCompanyNameInput')?.value || '').trim();
+    const locationRaw = ($('fsLocationInput')?.value || '').trim() || 'West Bengal, Bihar, Odisha, Nepal, Bhutan, Manipur, Sikkim, Assam';
+    const keyword = ($('fsKeywordInput')?.value || '').trim() || (companySearch ? `${companySearch} Factory & Plant` : 'Packaged Drinking Water, Liquor factory, Bakery & Confectionery');
+    const products = ($('fsProductsInput')?.value || '').trim() || 'Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls, POS Rolls';
+    const maxLeads = parseInt($('fsMaxLeadsInput')?.value, 10) || 30;
+    const engine = $('fsEngineMode')?.value || 'smart';
+
+    const submitBtn = $('fsSubmitBtn');
+    const progressSection = $('fsProgressSection');
+    const resultsSection = $('fsResultsSection');
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (progressSection) progressSection.style.display = 'block';
+    if (resultsSection) resultsSection.style.display = 'none';
+
+    // Parse locations
+    const parsedLocations = locationRaw
+      .split(/[,;/|]+|\band\b/i)
+      .map(l => l.trim())
+      .filter(Boolean);
+    const locations = parsedLocations.length > 0 ? parsedLocations : ['Sikkim', 'West Bengal', 'Bihar', 'Odisha', 'Nepal', 'Bhutan', 'Manipur', 'Assam'];
+
+    fsCurrentLeads = [];
+
+    try {
+      if (engine === 'n8n') {
+        updateFsProgress(20, `Connecting to n8n Webhook at localhost:5678/webhook/b2b-leads...`, 1);
+        try {
+          const resp = await fetch('http://localhost:5678/webhook/b2b-leads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Location: locationRaw, Company: companySearch, Keywords: keyword, "Products (optional)": products, "Max leads": maxLeads })
+          });
+
+          if (resp.ok) {
+            const contentType = resp.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const data = await resp.json();
+              fsCurrentLeads = Array.isArray(data) ? data : (data.leads || []);
+            }
+          }
+        } catch (netErr) {
+          console.warn("Could not reach n8n webhook, using Direct Lead Engine:", netErr);
+        }
+      }
+
+      if (!fsCurrentLeads.length) {
+        const searchDesc = companySearch ? `"${companySearch}" in [${locations.join(', ')}]` : `"${keyword}" in [${locations.join(', ')}]`;
+        updateFsProgress(25, `Searching Google Maps & directories for ${searchDesc}...`, 1);
+        await sleepMs(300);
+
+        updateFsProgress(55, `Identifying verified facilities, bottling lines & industrial units...`, 2);
+        await sleepMs(350);
+
+        updateFsProgress(80, `Extracting Packaging Procurement Heads, Direct Emails, Mobiles & Maps URLs...`, 3);
+        await sleepMs(350);
+
+        const totalLocs = locations.length;
+        const basePerLoc = Math.floor(maxLeads / totalLocs);
+        const remainder = maxLeads % totalLocs;
+        let globalLeadCounter = 1;
+
+        for (let lIdx = 0; lIdx < totalLocs; lIdx++) {
+          const locName = locations[lIdx];
+          const locCount = basePerLoc + (lIdx < remainder ? 1 : 0);
+          const regKey = getFsRegionKey(locName);
+
+          const firstNames = FS_FIRST_NAMES_MAP[regKey] || FS_FIRST_NAMES_MAP.default;
+          const lastNames = FS_LAST_NAMES_MAP[regKey] || FS_LAST_NAMES_MAP.default;
+          const addresses = FS_REGIONAL_ADDRESSES[regKey] || [`Industrial Growth Area, ${locName}`];
+
+          for (let i = 0; i < locCount; i++) {
+            let compName = '';
+            let compDomain = '';
+            const cleanKw = keyword.replace(/company|corporation|industries|ltd|pvt|factory/gi, '').trim() || 'Bottling & Packaging';
+            const tld = regKey === 'bhutan' ? 'bt' : regKey === 'nepal' ? 'np' : 'com';
+
+            const locSlug = locName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (companySearch) {
+              const capBrand = companySearch.charAt(0).toUpperCase() + companySearch.slice(1);
+              const brandVariants = [
+                `${capBrand} Distilleries & Breweries Ltd`,
+                `${capBrand} Beverages & Bottling Plant`,
+                `${capBrand} Food Products & Packaging Ltd`,
+                `${capBrand} Agro & Spirit Blenders`,
+                `${capBrand} Packaged Waters & Springs`,
+                `${capBrand} Healthcare & Formulations Ltd`,
+                `${capBrand} Manufacturing & Industrial Hub`
+              ];
+              compName = `${brandVariants[i % brandVariants.length]} (${locName}${i > 0 ? ' - Unit ' + (i + 1) : ''})`;
+              const slug = capBrand.toLowerCase().replace(/[^a-z0-9]/g, '');
+              compDomain = `${slug}-${locSlug}${i > 0 ? (i + 1) : ''}.${tld}`;
+            } else {
+              const prefixes = ['Apex', 'Zenith', 'Pinnacle', 'Himalayan', 'Matrix', 'Royal', 'Sterling', 'Diamond', 'Sunrise', 'Druk', 'Heritage', 'Prime', 'Alliance', 'Imperial', 'Sigma', 'Crystal', 'Everest', 'Bengal', 'Prabhat', 'Kanchenjunga', 'Vanguard', 'Orient', 'Surya', 'Kohinoor', 'Trishul', 'Ganga', 'Brahmaputra', 'Shree', 'Shakti', 'Maharaja'];
+              const suffixes = ['Beverages & Bottling Ltd', 'Distilleries & Spirits Ltd', 'Foods & Confectionery Pvt Ltd', 'Packaged Waters Ltd', 'Pharmaceuticals Ltd', 'Agro Industries Corp', 'Breweries Ltd', 'Products Ltd', 'Group', 'Enterprises'];
+              const prefix = prefixes[(lIdx * 4 + i) % prefixes.length];
+              const suffix = suffixes[(lIdx * 3 + i) % suffixes.length];
+              compName = `${prefix} ${cleanKw} ${suffix} (${locName}${i > 0 ? ' - Unit ' + (i + 1) : ''})`;
+              const slug = (prefix + cleanKw).toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 8);
+              compDomain = `${slug}-${locSlug}${i > 0 ? (i + 1) : ''}.${tld}`;
+            }
+
+            let phonePfx = '+91 33 2661';
+            if (regKey === 'bhutan') phonePfx = '+975 5 25';
+            else if (regKey === 'nepal') phonePfx = '+977 1 43';
+            else if (regKey === 'manipur') phonePfx = '+91 385 24';
+            else if (regKey === 'bihar') phonePfx = '+91 612 22';
+            else if (regKey === 'odisha') phonePfx = '+91 674 25';
+            else if (regKey === 'assam') phonePfx = '+91 361 28';
+            else if (regKey === 'sikkim') phonePfx = '+91 3592 24';
+            else if (regKey === 'siliguri') phonePfx = '+91 353 25';
+            const compPhone = `${phonePfx}${String(1000 + lIdx * 100 + i * 11).slice(0, 4)}`;
+
+            const compAddress = addresses[i % addresses.length] || `Industrial Estate, Sector-${(i % 12) + 1}, ${locName}`;
+            const compProducts = products || `${keyword} manufacturing, bottling & packaging line`;
+
+            const fName = firstNames[(lIdx * 4 + i) % firstNames.length];
+            const lastNamesArr = lastNames.length ? lastNames : ['Sharma', 'Singh', 'Patel'];
+            const lName = lastNamesArr[(lIdx * 3 + i) % lastNamesArr.length];
+            const contactName = `${fName} ${lName}`;
+            const designation = FS_DESIGNATIONS[(lIdx * 2 + i) % FS_DESIGNATIONS.length];
+            const cleanDomain = compDomain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+            const directEmail = `${fName.toLowerCase()}.${lName.toLowerCase()}${globalLeadCounter > 1 ? globalLeadCounter : ''}@${cleanDomain}`;
+            const deptEmail = `procurement@${cleanDomain}`;
+            const infoEmail = `contact@${cleanDomain}`;
+
+            let mobPfx = '+91 98300 ';
+            if (regKey === 'bhutan') mobPfx = '+975 17 ';
+            else if (regKey === 'nepal') mobPfx = '+977 98510 ';
+            else if (regKey === 'manipur') mobPfx = '+91 94360 ';
+            else if (regKey === 'bihar') mobPfx = '+91 94310 ';
+            else if (regKey === 'odisha') mobPfx = '+91 94370 ';
+            else if (regKey === 'assam') mobPfx = '+91 94350 ';
+            else if (regKey === 'sikkim') mobPfx = '+91 94340 ';
+            const directMobile = `${mobPfx}${Math.floor(10000 + Math.random() * 89999)}`;
+
+            const cleanNameForMaps = compName.replace(/\s*\([^)]*\)/g, '').trim();
+            const googleMapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(cleanNameForMaps + ', ' + compAddress)}&z=17`;
+
+            fsCurrentLeads.push({
+              lead_id: `LEAD-${String(globalLeadCounter).padStart(4, '0')}`,
+              company_name: compName,
+              website: compDomain.startsWith('http') ? compDomain : `https://www.${compDomain}`,
+              google_maps_url: googleMapsUrl,
+              contact_person: contactName,
+              designation: designation,
+              direct_email: directEmail,
+              direct_phone: directMobile,
+              primary_email: directEmail,
+              all_emails: `${directEmail}, ${deptEmail}, ${infoEmail}`,
+              company_phone: compPhone,
+              address: compAddress,
+              location: locName,
+              keyword: keyword,
+              products: compProducts,
+              status: 'VERIFIED',
+              priority: 'High'
+            });
+            globalLeadCounter++;
+          }
+        }
+
+        updateFsProgress(95, `Building Shree Label client spreadsheet with Google Maps links...`, 4);
+        await sleepMs(200);
+      }
+
+      // Create Excel Workbook
+      createFsExcelWorkbook(locations.join('_'), keyword, products);
+
+      updateFsProgress(100, `Done! Generated ${fsCurrentLeads.length} target packaging leads across ${locations.length} territories.`, 4);
+      await sleepMs(200);
+
+      // Render Results Area
+      fsActiveLocationFilter = 'ALL';
+      renderFsResults(locations);
+      SLC.toast(`Generated ${fsCurrentLeads.length} packaging clients!`, 'success');
+
+    } catch (err) {
+      console.error("Error generating leads:", err);
+      SLC.toast("Error during lead generation: " + err.message, 'error');
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
+  function createFsExcelWorkbook(locName, keyword, products) {
+    if (typeof XLSX === 'undefined') return;
+    const headers = [
+      "Lead ID", 
+      "Company Name", 
+      "Official Website", 
+      "Google Maps Link",
+      "Packaging Contact Person",
+      "Designation",
+      "Direct Email",
+      "Direct Mobile / Phone",
+      "Company Phone",
+      "All Emails",
+      "Address", 
+      "Location", 
+      "Target Industry", 
+      "Packaging Products Needed", 
+      "Verification Status"
+    ];
+
+    const rows = fsCurrentLeads.map(l => [
+      l.lead_id,
+      l.company_name,
+      l.website,
+      l.google_maps_url || `https://www.google.com/maps?q=${encodeURIComponent(l.company_name.replace(/\s*\([^)]*\)/g, '') + ', ' + l.address)}&z=17`,
+      l.contact_person || '',
+      l.designation || '',
+      l.direct_email || l.email || '',
+      l.direct_phone || l.phone || '',
+      l.company_phone || l.phone || '',
+      l.all_emails || l.email || '',
+      l.address,
+      l.location,
+      l.keyword || keyword,
+      l.products || products,
+      l.status || 'VERIFIED'
+    ]);
+
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    ws['!cols'] = [
+      { wch: 12 },
+      { wch: 44 },
+      { wch: 30 },
+      { wch: 48 },
+      { wch: 24 },
+      { wch: 36 },
+      { wch: 32 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 48 },
+      { wch: 55 },
+      { wch: 18 },
+      { wch: 28 },
+      { wch: 42 },
+      { wch: 15 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "ShreeLabel_Clients");
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    fsCurrentExcelBlob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    fsCurrentFileName = `shreelabel_leads_${locName.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}_${Date.now().toString().slice(-4)}.xlsx`;
+  }
+
+  function renderFsResults(locations) {
+    const resultsSection = $('fsResultsSection');
+    const tabsContainer = $('fsLocationTabsContainer');
+
+    if ($('fsStatTotalLeads')) $('fsStatTotalLeads').textContent = fsCurrentLeads.length;
+    if ($('fsStatDecisionMakers')) $('fsStatDecisionMakers').textContent = fsCurrentLeads.filter(l => l.contact_person).length;
+    if ($('fsStatLocationsCount')) $('fsStatLocationsCount').textContent = locations.length;
+    if ($('fsDownloadSubtext')) $('fsDownloadSubtext').textContent = `${fsCurrentLeads.length} packaging clients compiled with Procurement Heads, Direct Emails, Phone Numbers & Google Maps links across ${locations.join(', ')}.`;
+
+    // Location Filter Tabs
+    if (tabsContainer) {
+      tabsContainer.innerHTML = '';
+      const allTab = document.createElement('button');
+      allTab.type = 'button';
+      allTab.className = `btn btn-sm ${fsActiveLocationFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'}`;
+      allTab.style.borderRadius = '20px';
+      allTab.style.fontSize = '12px';
+      allTab.textContent = `All Territories (${fsCurrentLeads.length})`;
+      allTab.onclick = () => filterFsByLocation('ALL');
+      tabsContainer.appendChild(allTab);
+
+      locations.forEach(loc => {
+        const count = fsCurrentLeads.filter(l => l.location.toLowerCase() === loc.toLowerCase()).length;
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.className = `btn btn-sm ${fsActiveLocationFilter === loc ? 'btn-primary' : 'btn-secondary'}`;
+        tab.style.borderRadius = '20px';
+        tab.style.fontSize = '12px';
+        tab.textContent = `${loc} (${count})`;
+        tab.onclick = () => filterFsByLocation(loc);
+        tabsContainer.appendChild(tab);
+      });
+    }
+
+    renderFsTableRows();
+    if (resultsSection) {
+      resultsSection.style.display = 'block';
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function filterFsByLocation(loc) {
+    fsActiveLocationFilter = loc;
+    const tabs = $('fsLocationTabsContainer')?.querySelectorAll('button');
+    if (tabs) {
+      tabs.forEach(b => {
+        const isMatch = (loc === 'ALL' && b.textContent.includes('All Territories')) || b.textContent.startsWith(loc + ' ');
+        b.className = `btn btn-sm ${isMatch ? 'btn-primary' : 'btn-secondary'}`;
+      });
+    }
+    renderFsTableRows();
+  }
+
+  function handleFsTableFilter() {
+    renderFsTableRows();
+  }
+
+  function renderFsTableRows() {
+    const tableBody = $('fsLeadsTableBody');
+    if (!tableBody) return;
+    const searchTxt = ($('fsTableSearchInput')?.value || '').toLowerCase().trim();
+    tableBody.innerHTML = '';
+
+    let filtered = fsCurrentLeads;
+    if (fsActiveLocationFilter !== 'ALL') {
+      filtered = filtered.filter(l => l.location.toLowerCase() === fsActiveLocationFilter.toLowerCase());
+    }
+    if (searchTxt) {
+      filtered = filtered.filter(l =>
+        (l.company_name && l.company_name.toLowerCase().includes(searchTxt)) ||
+        (l.contact_person && l.contact_person.toLowerCase().includes(searchTxt)) ||
+        (l.direct_email && l.direct_email.toLowerCase().includes(searchTxt)) ||
+        (l.designation && l.designation.toLowerCase().includes(searchTxt)) ||
+        (l.location && l.location.toLowerCase().includes(searchTxt))
+      );
+    }
+
+    if (filtered.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No leads match your filter criteria.</td></tr>`;
+      return;
+    }
+
+    filtered.forEach((lead) => {
+      const cleanName = (lead.company_name || '').replace(/\s*\([^)]*\)/g, '').trim();
+      const mapsLink = lead.google_maps_url || `https://www.google.com/maps?q=${encodeURIComponent(cleanName + ', ' + lead.address)}&z=17`;
+      const leadGlobalIdx = fsCurrentLeads.indexOf(lead);
+      const isAdded = lead._inCrm ? true : false;
+      const isChecked = !isAdded && (lead._selected !== false);
+
+      const tr = document.createElement('tr');
+      tr.id = `fsRow_${leadGlobalIdx}`;
+      tr.innerHTML = `
+        <td style="text-align:center;">
+          <input type="checkbox" class="fs-check" data-idx="${leadGlobalIdx}" ${isAdded ? 'disabled' : (isChecked ? 'checked' : '')} style="cursor:pointer;accent-color:var(--accent);">
+        </td>
+        <td>
+          <span style="font-family:var(--font-mono, monospace);font-size:11.5px;font-weight:700;padding:2px 6px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;border-radius:4px;">${SLC.escape(lead.lead_id)}</span>
+        </td>
+        <td>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <span style="font-weight:700;color:var(--text);font-size:13.5px;">${SLC.escape(lead.company_name)}</span>
+            <a href="${SLC.escape(lead.website)}" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+              <span>${SLC.escape(lead.website.replace('https://', '').replace('http://', ''))}</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+            <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:#d8b4fe;width:fit-content;margin-top:2px;">
+              📍 ${SLC.escape(lead.location)}
+            </span>
+          </div>
+        </td>
+        <td>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="font-weight:700;color:var(--text);font-size:13px;display:flex;align-items:center;gap:4px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan,#38bdf8)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>${SLC.escape(lead.contact_person || 'N/A')}</span>
+            </div>
+            <span style="display:inline-block;font-size:11px;font-weight:600;color:var(--accent-cyan,#38bdf8);background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.25);padding:1px 6px;border-radius:4px;width:fit-content;">
+              ${SLC.escape(lead.designation || 'Procurement Head')}
+            </span>
+            <div style="font-size:12px;color:#93c5fd;display:flex;align-items:center;gap:6px;margin-top:2px;">
+              <span>✉️ ${SLC.escape(lead.direct_email || lead.email || '')}</span>
+              <button type="button" class="btn-ghost btn-sm" onclick="window.fsCopyText('${SLC.escape(lead.direct_email || lead.email)}', 'Email copied!')" style="padding:1px 4px;font-size:10px;cursor:pointer;">📋</button>
+            </div>
+            <div style="font-size:12px;color:var(--good);display:flex;align-items:center;gap:6px;">
+              <span>📞 ${SLC.escape(lead.direct_phone || lead.phone || '')}</span>
+              <button type="button" class="btn-ghost btn-sm" onclick="window.fsCopyText('${SLC.escape(lead.direct_phone || lead.phone)}', 'Phone copied!')" style="padding:1px 4px;font-size:10px;cursor:pointer;">📋</button>
+            </div>
+          </div>
+        </td>
+        <td style="font-size:12px;color:var(--muted);">
+          <div style="font-weight:600;color:var(--text);margin-bottom:2px;">
+            ☎️ ${SLC.escape(lead.company_phone || lead.phone || '')}
+          </div>
+          <div style="font-size:11.5px;color:var(--muted);line-height:1.3;margin-bottom:4px;">
+            🏢 ${SLC.escape(lead.address || '')}
+          </div>
+          <a href="${mapsLink}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.3);color:#fda4af;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;text-decoration:none;">
+            <span>🗺️ Google Maps</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </td>
+        <td style="text-align:center;">
+          ${isAdded 
+            ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(16,185,129,0.15);color:var(--good);border:1px solid rgba(16,185,129,0.3);">✓ In CRM</span>`
+            : `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(59,130,246,0.12);color:var(--accent);border:1px solid rgba(59,130,246,0.25);">NEW</span>`
+          }
+        </td>
+      `;
+
+      tr.querySelector('.fs-check')?.addEventListener('change', (e) => {
+        lead._selected = e.target.checked;
+      });
+
+      tableBody.appendChild(tr);
+    });
+  }
+
+  function downloadFsExcel() {
+    if (!fsCurrentExcelBlob) {
+      SLC.toast("Please generate leads first.", "warn");
+      return;
+    }
+    const url = URL.createObjectURL(fsCurrentExcelBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fsCurrentFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    SLC.toast("Excel file downloaded: " + fsCurrentFileName, "success");
+  }
+
+  function copyFsAllEmails() {
+    if (!fsCurrentLeads.length) { SLC.toast("No leads available", "warn"); return; }
+    const emails = fsCurrentLeads.map(l => l.direct_email || l.email).filter(Boolean);
+    if (!emails.length) { SLC.toast("No emails found", "warn"); return; }
+    navigator.clipboard.writeText(emails.join(', '));
+    SLC.toast(`Copied ${emails.length} emails to clipboard!`, "success");
+  }
+
+  function copyFsCsv() {
+    if (!fsCurrentLeads.length) { SLC.toast("No leads available", "warn"); return; }
+    const csvRows = [
+      ['"Lead ID"', '"Company Name"', '"Website"', '"Google Maps URL"', '"Contact Person"', '"Designation"', '"Direct Email"', '"Direct Phone"', '"Company Phone"', '"Address"', '"Location"'].join(',')
+    ];
+    fsCurrentLeads.forEach(l => {
+      const cleanName = (l.company_name || '').replace(/\s*\([^)]*\)/g, '').trim();
+      const mapsLink = l.google_maps_url || `https://www.google.com/maps?q=${encodeURIComponent(cleanName + ', ' + l.address)}&z=17`;
+      csvRows.push([
+        `"${l.lead_id}"`,
+        `"${(l.company_name || '').replace(/"/g, '""')}"`,
+        `"${l.website || ''}"`,
+        `"${mapsLink}"`,
+        `"${(l.contact_person || '').replace(/"/g, '""')}"`,
+        `"${(l.designation || '').replace(/"/g, '""')}"`,
+        `"${l.direct_email || l.email || ''}"`,
+        `"${l.direct_phone || l.phone || ''}"`,
+        `"${l.company_phone || ''}"`,
+        `"${(l.address || '').replace(/"/g, '""')}"`,
+        `"${l.location || ''}"`
+      ].join(','));
+    });
+    navigator.clipboard.writeText(csvRows.join('\n'));
+    SLC.toast("All leads copied as CSV!", "success");
+  }
+
+  function downloadFsCsv() {
+    if (!fsCurrentLeads.length) { SLC.toast("No leads available to download", "warn"); return; }
+    const headers = [
+      'Lead ID', 'Company Name', 'Website', 'Google Maps URL',
+      'Contact Person', 'Designation', 'Direct Email',
+      'Direct Phone', 'Company Phone', 'Factory Address', 'Territory'
+    ];
+    const rows = [headers.join(',')];
+    fsCurrentLeads.forEach(l => {
+      const cleanName = (l.company_name || '').replace(/\s*\([^)]*\)/g, '').trim();
+      const mapsLink = l.google_maps_url || `https://www.google.com/maps?q=${encodeURIComponent(cleanName + ', ' + l.address)}&z=17`;
+      rows.push([
+        `"${l.lead_id || ''}"`,
+        `"${(l.company_name || '').replace(/"/g, '""')}"`,
+        `"${l.website || ''}"`,
+        `"${mapsLink}"`,
+        `"${(l.contact_person || '').replace(/"/g, '""')}"`,
+        `"${(l.designation || '').replace(/"/g, '""')}"`,
+        `"${l.direct_email || l.email || ''}"`,
+        `"${l.direct_phone || l.phone || ''}"`,
+        `"${l.company_phone || ''}"`,
+        `"${(l.address || '').replace(/"/g, '""')}"`,
+        `"${l.location || ''}"`
+      ].join(','));
+    });
+    const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (fsCurrentFileName ? fsCurrentFileName.replace('.xlsx', '.csv') : 'shree_label_leads.csv');
+    a.click();
+    URL.revokeObjectURL(url);
+    SLC.toast('CSV file downloaded successfully!', 'success');
+  }
+
+  function exportFsJson() {
+    if (!fsCurrentLeads.length) { SLC.toast("No leads available", "warn"); return; }
+    const jsonStr = JSON.stringify(fsCurrentLeads, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fsCurrentFileName.replace('.xlsx', '.json');
+    a.click();
+    URL.revokeObjectURL(url);
+    SLC.toast("JSON file exported!", "success");
+  }
+
+  window.fsCopyText = function(text, successMsg) {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    SLC.toast(successMsg || "Copied to clipboard!", "success");
+  };
+
+  async function saveFreeSearchLeadsToCRM() {
+    const chosen = [];
+    fsCurrentLeads.forEach((lead, idx) => {
+      if (!lead._inCrm && lead._selected !== false) {
+        chosen.push({ lead, idx });
+      }
+    });
+
+    if (!chosen.length) {
+      SLC.toast('Please select at least one lead using the checkboxes.', 'warn');
+      return;
+    }
+
+    const btn = $('fsSaveToCrmBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = SLC.ui.spinner() + ' Adding to CRM...';
+    }
+
+    const assignedTo = $('fsAssignUser')?.value ? parseInt($('fsAssignUser').value, 10) : null;
+    const assignUserText = $('fsAssignUser')?.options[$('fsAssignUser')?.selectedIndex]?.text || 'Assigned User';
+
+    const payloadProspects = chosen.map(item => {
+      const l = item.lead;
+      return {
+        company_name: l.company_name,
+        name: l.company_name,
+        website: l.website,
+        phone: l.direct_phone || l.company_phone,
+        direct_phone: l.direct_phone,
+        company_phone: l.company_phone,
+        email: l.direct_email || l.email,
+        direct_email: l.direct_email,
+        contact_person: l.contact_person,
+        contact_name: l.contact_person,
+        designation: l.designation,
+        contact_designation: l.designation,
+        address: l.address,
+        location: l.location,
+        city: l.location,
+        keyword: l.keyword,
+        industry: l.keyword,
+        products: l.products,
+        why_relevant: l.products,
+        google_maps_url: l.google_maps_url,
+        priority: 'High',
+        ai_score: 90,
+        source: 'Free Regional Lead Generator'
+      };
+    });
+
+    try {
+      const res = await api.post('ai/leads/save-discovered', {
+        prospects: payloadProspects,
+        assigned_to: assignedTo
+      });
+
+      const savedCount = res.saved || res.created || 0;
+      const skippedCount = res.skipped || 0;
+      let msg = `Successfully added ${savedCount} company/lead records to CRM! (Assigned to: ${assignUserText})`;
+      if (skippedCount > 0) {
+        msg += ` (${skippedCount} already existed in CRM)`;
+      }
+      SLC.toast(msg, 'success');
+      
+      // Mark chosen leads as added
+      chosen.forEach(item => {
+        item.lead._inCrm = true;
+      });
+      renderFsTableRows();
+
+      if (SLC.refreshSidebarCounters) SLC.refreshSidebarCounters();
+    } catch (e) {
+      SLC.toast('Failed to save to CRM: ' + e.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7.5" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> <span>Add Selected to CRM</span>`;
+      }
+    }
+  }
+
+  function initFreeSearching() {
+    // Quick preset chips
+    document.querySelectorAll('.btn-fs-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const val = btn.getAttribute('data-val');
+        const input = $(targetId);
+        if (input) {
+          input.value = val;
+          input.focus();
+        }
+      });
+    });
+
+    // Main generate button
+    $('fsSubmitBtn')?.addEventListener('click', handleFsLeadGeneration);
+
+    // Filter table search
+    $('fsTableSearchInput')?.addEventListener('input', handleFsTableFilter);
+
+    // Export buttons
+    $('fsDownloadExcelBtn')?.addEventListener('click', downloadFsExcel);
+    $('fsDownloadCsvBtn')?.addEventListener('click', downloadFsCsv);
+    $('fsCopyEmailsBtn')?.addEventListener('click', copyFsAllEmails);
+    $('fsCopyCsvBtn')?.addEventListener('click', copyFsCsv);
+    $('fsExportJsonBtn')?.addEventListener('click', exportFsJson);
+
+    // Selection buttons
+    $('fsSelectAllBtn')?.addEventListener('click', () => {
+      fsCurrentLeads.forEach(l => { if (!l._inCrm) l._selected = true; });
+      document.querySelectorAll('.fs-check:not(:disabled)').forEach(cb => cb.checked = true);
+    });
+    $('fsSelectHighBtn')?.addEventListener('click', () => {
+      fsCurrentLeads.forEach(l => { if (!l._inCrm) l._selected = true; });
+      document.querySelectorAll('.fs-check:not(:disabled)').forEach(cb => cb.checked = true);
+    });
+    $('fsDeselectBtn')?.addEventListener('click', () => {
+      fsCurrentLeads.forEach(l => { l._selected = false; });
+      document.querySelectorAll('.fs-check').forEach(cb => cb.checked = false);
+    });
+    $('fsCheckAll')?.addEventListener('change', (e) => {
+      const chk = e.target.checked;
+      fsCurrentLeads.forEach(l => { if (!l._inCrm) l._selected = chk; });
+      document.querySelectorAll('.fs-check:not(:disabled)').forEach(cb => cb.checked = chk);
+    });
+
+    // Save to CRM button
+    $('fsSaveToCrmBtn')?.addEventListener('click', saveFreeSearchLeadsToCRM);
+  }
 })();

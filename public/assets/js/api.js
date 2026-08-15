@@ -37,7 +37,18 @@
       try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
     }
     if (!resp.ok) {
-      const msg = (data && data.error) ? data.error : ('Request failed (' + resp.status + ')');
+      let msg = (data && data.error) ? data.error : ('Request failed (' + resp.status + ')');
+      if (data && data.errors && typeof data.errors === 'object') {
+        const fieldKeys = Object.keys(data.errors);
+        if (fieldKeys.length > 0) {
+          const firstErrList = data.errors[fieldKeys[0]];
+          if (Array.isArray(firstErrList) && firstErrList.length > 0) {
+            msg = firstErrList[0];
+          } else if (typeof firstErrList === 'string') {
+            msg = firstErrList;
+          }
+        }
+      }
       const err = new Error(msg);
       err.status = resp.status;
       err.data = data;

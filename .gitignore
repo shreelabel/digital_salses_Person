@@ -2,6 +2,8 @@
 .env
 storage/logs/*
 storage/framework/rate_limits/*
+storage/framework/cache/*
+storage/framework/cache/imports/*
 !storage/logs/.gitkeep
 !storage/framework/.gitkeep
 

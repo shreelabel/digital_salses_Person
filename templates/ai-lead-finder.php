@@ -1,3 +1,6 @@
+<!-- SheetJS for pure client-side Excel generation in Free Searching tab -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <div class="page" id="page-lead-finder" data-page="ai-lead-finder">
   <!-- Page Header -->
   <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
@@ -10,16 +13,21 @@
 
   <!-- Top Tab Navigation -->
   <div class="lead-finder-tabs" style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:12px;">
-    <button class="btn btn-secondary active-tab" id="tabBtnDiscovery" data-tab="discovery" style="display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-weight:600;transition:all .15s;">
+    <button class="btn btn-secondary active-tab" id="tabBtnDiscovery" data-tab="discovery" style="display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-weight:600;transition:all .15s;background:linear-gradient(135deg, #f97316, #ea580c);color:#fff;border:1px solid #f97316;box-shadow:0 4px 12px rgba(249,115,22,0.35);">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       Google Maps & Factory Discovery
     </button>
-    <button class="btn btn-secondary" id="tabBtnApolloImport" data-tab="apollo-import" style="display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-weight:600;transition:all .15s;">
+    <button class="btn btn-secondary" id="tabBtnApolloImport" data-tab="apollo-import" style="display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-weight:600;transition:all .15s;background:var(--panel2);color:var(--text);border:1px solid var(--border);">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Manual Apollo CSV Import
       <span style="font-size:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:2px 7px;border-radius:6px;font-weight:700;">70+ Cols</span>
     </button>
-    <button class="btn btn-secondary" id="tabBtnHistory" data-tab="history" style="display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-weight:600;transition:all .15s;">
+    <button class="btn btn-secondary" id="tabBtnFreeSearch" data-tab="free-search" style="display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-weight:600;transition:all .15s;background:var(--panel2);color:var(--text);border:1px solid var(--border);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Free Searching
+      <span style="font-size:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:2px 7px;border-radius:6px;font-weight:700;">Direct & n8n</span>
+    </button>
+    <button class="btn btn-secondary" id="tabBtnHistory" data-tab="history" style="display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-weight:600;transition:all .15s;background:var(--panel2);color:var(--text);border:1px solid var(--border);">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Import History
     </button>
@@ -219,6 +227,10 @@
           <button class="btn btn-secondary btn-sm" data-sel="high">Select High Priority</button>
           <button class="btn btn-secondary btn-sm" data-sel="all">Select All</button>
           <button class="btn btn-secondary btn-sm" data-sel="none">Deselect All</button>
+          <button class="btn btn-secondary btn-sm" id="lfDownloadCsvBtn" title="Download Leads as CSV file" style="display:inline-flex;align-items:center;gap:5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download CSV
+          </button>
           <button class="btn-primary btn-sm" id="lfSave"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7.5" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Add Selected to CRM</button>
         </div>
       </div>
@@ -427,17 +439,319 @@
     </div>
   </div>
 
-  <!-- TAB 3: IMPORT HISTORY -->
+  <!-- TAB 3: FREE SEARCHING (DIRECT MULTI-LOCATION & N8N LEAD GENERATOR) -->
+  <div class="tab-panel hidden" id="panelFreeSearch">
+    
+    <!-- Free Searching Card & Input Form -->
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;position:relative;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;color:var(--good);margin-bottom:6px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--good);display:inline-block;box-shadow:0 0 8px var(--good);"></span>
+            <span>Shree Label Creation • Multi-Territory Lead Extractor & CRM Pusher</span>
+          </div>
+          <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text);">B2B Lead Generator & Regional Factory Finder</h2>
+          <p style="margin:4px 0 0 0;font-size:13px;color:var(--muted);">
+            Extract verified decision makers, procurement heads, direct emails, mobile numbers, and Google Maps links across West Bengal, Bihar, Odisha, Nepal, Bhutan, Manipur, Sikkim & Assam.
+          </p>
+        </div>
+      </div>
+
+      <form id="fsLeadForm" onsubmit="event.preventDefault(); return false;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:16px;">
+          
+          <!-- 1. Location -->
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--text);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Target Region(s) / Location</span>
+              <span style="color:var(--bad);">*</span>
+            </label>
+            <input type="text" id="fsLocationInput" class="fld" placeholder="e.g. Sikkim, West Bengal, Bhutan, Bihar, Nepal, Odisha, Manipur..." value="West Bengal, Bihar, Odisha, Nepal, Bhutan, Manipur, Sikkim, Assam" style="width:100%;">
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
+              💡 Tip: Type single or multiple locations separated by commas, or click quick presets below.
+            </div>
+            <!-- Target Markets Quick Presets -->
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
+              <span style="font-size:11px;color:var(--muted2);font-weight:600;align-self:center;">Presets:</span>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="Kolkata, Siliguri, West Bengal" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🏛️ West Bengal</button>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="Patna, Muzaffarpur, Bihar" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🌾 Bihar</button>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="Bhubaneswar, Cuttack, Odisha" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🌊 Odisha</button>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="Guwahati, Tezpur, Assam" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🌿 Assam</button>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="Imphal, Thoubal, Manipur" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🏔️ Manipur</button>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="Rangpo, Melli, Sikkim" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🍃 Sikkim</button>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="Phuentsholing, Thimphu, Bhutan" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🇧🇹 Bhutan</button>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="Kathmandu, Birgunj, Nepal" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🇳🇵 Nepal</button>
+              <button type="button" class="btn-fs-chip" data-target="fsLocationInput" data-val="West Bengal, Bihar, Odisha, Assam, Sikkim, Bhutan, Nepal, Manipur" style="font-size:11px;background:rgba(59,130,246,0.15);border:1px solid var(--accent);color:#93c5fd;padding:2px 8px;border-radius:12px;cursor:pointer;font-weight:700;">⭐ All 8 Core Territories</button>
+            </div>
+          </div>
+
+          <!-- 2. Company Name / Brand Partial Search -->
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--text);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <span>Company / Brand Name (Optional Fuzzy Search)</span>
+              <span style="font-size:10px;background:var(--panel2);color:var(--muted);padding:1px 6px;border-radius:4px;margin-left:auto;">Optional</span>
+            </label>
+            <input type="text" id="fsCompanyNameInput" class="fld" placeholder="e.g. Savi, Bisleri, Old Monk, IFB, Yuksom, Mio Amore (or leave blank)" style="width:100%;">
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
+              💡 Tip: Enter brand name (e.g. 'savi' in Sikkim finds all matching distilleries/units).
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
+              <span style="font-size:11px;color:var(--muted2);font-weight:600;align-self:center;">Brands:</span>
+              <button type="button" class="btn-fs-chip" data-target="fsCompanyNameInput" data-val="Savi" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🔍 Savi (Sikkim)</button>
+              <button type="button" class="btn-fs-chip" data-target="fsCompanyNameInput" data-val="Bisleri" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">💧 Bisleri</button>
+              <button type="button" class="btn-fs-chip" data-target="fsCompanyNameInput" data-val="Old Monk" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🥃 Old Monk</button>
+              <button type="button" class="btn-fs-chip" data-target="fsCompanyNameInput" data-val="Mio Amore" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🍰 Mio Amore</button>
+              <button type="button" class="btn-fs-chip" data-target="fsCompanyNameInput" data-val="Yuksom Breweries" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🍺 Yuksom Breweries</button>
+              <button type="button" class="btn-fs-chip" data-target="fsCompanyNameInput" data-val="" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:12px;cursor:pointer;">✖ Clear</button>
+            </div>
+          </div>
+
+          <!-- 3. Target Buyer Industry -->
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--text);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="2"/><line x1="15" y1="22" x2="15" y2="2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+              <span>Target Buyer Industry</span>
+              <span style="color:var(--bad);">*</span>
+            </label>
+            <input type="text" id="fsKeywordInput" class="fld" placeholder="e.g. Packaged Drinking Water, Liquor factory, Bakery, Pharma..." value="Packaged Drinking Water, Liquor factory, Bakery & Confectionery" style="width:100%;">
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
+              💡 Tip: Buyer category requiring packaging, labels, or bottle wrapping.
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
+              <span style="font-size:11px;color:var(--muted2);font-weight:600;align-self:center;">Industries:</span>
+              <button type="button" class="btn-fs-chip" data-target="fsKeywordInput" data-val="Packaged Drinking Water & Mineral Water Bottling" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">💧 Packaged Water</button>
+              <button type="button" class="btn-fs-chip" data-target="fsKeywordInput" data-val="Distilleries, Breweries & Liquor Bottlers" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🍸 Liquor & Beer</button>
+              <button type="button" class="btn-fs-chip" data-target="fsKeywordInput" data-val="Bakery, Confectionery & FMCG (Mio Amore style)" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🍰 Bakery & Snacks</button>
+              <button type="button" class="btn-fs-chip" data-target="fsKeywordInput" data-val="Pharmaceutical & Healthcare Formulations" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">💊 Pharma</button>
+              <button type="button" class="btn-fs-chip" data-target="fsKeywordInput" data-val="Cosmetics, Toiletries & Personal Care" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🧴 Cosmetics</button>
+              <button type="button" class="btn-fs-chip" data-target="fsKeywordInput" data-val="Edible Oil, Mustard Oil & Lubricant Mills" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🛢️ Oils & Lubricants</button>
+            </div>
+          </div>
+
+          <!-- 4. Target Products / Offerings -->
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--text);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              <span>Shree Label Offerings & Products</span>
+              <span style="font-size:10px;background:var(--panel2);color:var(--muted);padding:1px 6px;border-radius:4px;margin-left:auto;">Optional</span>
+            </label>
+            <input type="text" id="fsProductsInput" class="fld" placeholder="e.g. Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls..." value="Multicolour Self-Adhesive Roll Labels, Bottle Wrap Labels, Barcode Rolls, POS Rolls" style="width:100%;">
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
+              💡 Tip: Specific label formats or thermal roll requirements you pitch.
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
+              <span style="font-size:11px;color:var(--muted2);font-weight:600;align-self:center;">Labels:</span>
+              <button type="button" class="btn-fs-chip" data-target="fsProductsInput" data-val="Multicolour Self-Adhesive Roll Labels & Stickers" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🏷️ Roll Labels</button>
+              <button type="button" class="btn-fs-chip" data-target="fsProductsInput" data-val="Water Bottle Wrap-Around Labels & Shrink Sleeves" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">💧 Bottle Wrap Labels</button>
+              <button type="button" class="btn-fs-chip" data-target="fsProductsInput" data-val="Metallic, Gold & Silver Foil Embossed Liquor Labels" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">✨ Foil Liquor Labels</button>
+              <button type="button" class="btn-fs-chip" data-target="fsProductsInput" data-val="Transparent No-Look Clear Labels for Bottles" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🔍 Clear Labels</button>
+              <button type="button" class="btn-fs-chip" data-target="fsProductsInput" data-val="Chromo, Polyester Barcode Labels & TTR Ribbons" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">📦 Barcode & TTR</button>
+              <button type="button" class="btn-fs-chip" data-target="fsProductsInput" data-val="POS Thermal Billing Rolls (Plain & Pre-Printed)" style="font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:12px;cursor:pointer;">🧾 POS Thermal Rolls</button>
+            </div>
+          </div>
+
+          <!-- 5. Max Leads Count -->
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text);">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>Max Leads to Extract (1 - 100)</span>
+                <span style="color:var(--bad);">*</span>
+              </label>
+              <span style="font-size:12px;color:var(--muted);">Default: 30 leads</span>
+            </div>
+            <input type="number" id="fsMaxLeadsInput" class="fld" placeholder="30" min="1" max="100" value="30" style="width:100%;max-width:200px;">
+          </div>
+        </div>
+
+        <!-- Engine Mode Switcher -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;margin-bottom:18px;font-size:13px;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:600;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            <span>Execution Engine:</span>
+          </div>
+          <select id="fsEngineMode" class="fld" style="padding:6px 12px;font-size:12.5px;margin:0;width:auto;min-width:320px;">
+            <option value="smart">⚡ Direct Dynamic Multi-Location Engine (Instant & Accurate)</option>
+            <option value="n8n">🔗 n8n Docker Webhook (http://localhost:5678/webhook/b2b-leads)</option>
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="button" id="fsSubmitBtn" class="btn-primary" style="width:100%;padding:14px 20px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 25px rgba(59,130,246,0.35);">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Generate Targeted B2B Leads & Google Maps Links</span>
+        </button>
+      </form>
+
+      <!-- Live Animated Progress Section -->
+      <div id="fsProgressSection" style="display:none;margin-top:20px;padding:20px;background:rgba(124,92,255,0.06);border:1px solid rgba(124,92,255,0.25);border-radius:var(--radius);text-align:center;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="spin" style="width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;"></div>
+            <span id="fsCurrentStatusText" style="font-size:14px;font-weight:700;color:var(--text);">Initializing regional lead scanner...</span>
+          </div>
+          <div id="fsProgressPercentText" style="font-size:14px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:3px 10px;border-radius:20px;">0%</div>
+        </div>
+
+        <div style="max-width:100%;background:var(--panel2);border:1px solid var(--border2);border-radius:10px;height:10px;overflow:hidden;padding:2px;margin-bottom:14px;">
+          <div id="fsProgressBarFill" style="width:0%;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),#a855f7,#3b82f6,#10b981);transition:width .25s ease;"></div>
+        </div>
+
+        <div style="display:flex;justify-content:center;gap:16px;font-size:12px;color:var(--muted);flex-wrap:wrap;">
+          <div id="fsStep1" style="display:flex;align-items:center;gap:6px;"><span style="width:18px;height:18px;border-radius:50%;background:var(--panel3);color:var(--muted);display:inline-block;text-align:center;line-height:18px;font-weight:700;">1</span> Regional Maps Scan</div>
+          <div id="fsStep2" style="display:flex;align-items:center;gap:6px;"><span style="width:18px;height:18px;border-radius:50%;background:var(--panel3);color:var(--muted);display:inline-block;text-align:center;line-height:18px;font-weight:700;">2</span> Factory Matching</div>
+          <div id="fsStep3" style="display:flex;align-items:center;gap:6px;"><span style="width:18px;height:18px;border-radius:50%;background:var(--panel3);color:var(--muted);display:inline-block;text-align:center;line-height:18px;font-weight:700;">3</span> Decision Makers & Contacts</div>
+          <div id="fsStep4" style="display:flex;align-items:center;gap:6px;"><span style="width:18px;height:18px;border-radius:50%;background:var(--panel3);color:var(--muted);display:inline-block;text-align:center;line-height:18px;font-weight:700;">4</span> Excel & CRM Ready</div>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div id="fsResultsSection" style="display:none;margin-top:28px;">
+        
+        <!-- Prominent Download Excel Banner -->
+        <div style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08));border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius);padding:18px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:14px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:46px;height:46px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;display:grid;place-items:center;box-shadow:0 0 15px rgba(16,185,129,0.4);">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div>
+              <h3 style="margin:0;font-size:16px;font-weight:700;color:var(--text);">Excel Spreadsheet Ready (.xlsx)</h3>
+              <p id="fsDownloadSubtext" style="margin:2px 0 0 0;font-size:12.5px;color:var(--muted);">Leads compiled with decision maker contact details, direct emails, and Google Maps links.</p>
+            </div>
+          </div>
+          
+          <button id="fsDownloadExcelBtn" class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);border-color:#10b981;padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download Excel (.xlsx)</span>
+          </button>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-bottom:20px;">
+          <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
+            <div id="fsStatTotalLeads" style="font-size:24px;font-weight:800;color:var(--text);">30</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;margin-top:2px;">Total Leads Found</div>
+          </div>
+          <div style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.25);border-radius:12px;padding:14px;text-align:center;">
+            <div id="fsStatDecisionMakers" style="font-size:24px;font-weight:800;color:var(--accent-cyan,#38bdf8);">30</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;margin-top:2px;">Decision Makers</div>
+          </div>
+          <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:14px;text-align:center;">
+            <div id="fsStatEmailsFound" style="font-size:24px;font-weight:800;color:var(--good);">100%</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;margin-top:2px;">Direct Emails Verified</div>
+          </div>
+          <div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.25);border-radius:12px;padding:14px;text-align:center;">
+            <div id="fsStatLocationsCount" style="font-size:24px;font-weight:800;color:var(--accent2,#c084fc);">8</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;margin-top:2px;">Territories Scanned</div>
+          </div>
+        </div>
+
+        <!-- Results Toolbar: Location Filter Tabs + Search -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div id="fsLocationTabsContainer" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <!-- Dynamically injected location filter tabs -->
+          </div>
+          
+          <div style="position:relative;">
+            <input type="text" id="fsTableSearchInput" class="fld" placeholder="Filter company, contact, city..." style="padding:6px 12px;font-size:12px;width:220px;margin:0;border-radius:20px;">
+          </div>
+        </div>
+
+        <!-- Lead Table Card with CRM Action Header -->
+        <div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius);">
+          
+          <!-- Table Header / CRM Action Bar -->
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--panel2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <div>
+              <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--text);">Target Packaging Clients, Decision Makers & Maps</h3>
+              <p style="margin:2px 0 0 0;font-size:12px;color:var(--muted);">Select leads to push directly to CRM Companies & Leads pipeline</p>
+            </div>
+            
+            <!-- CRM Integration Controls -->
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <!-- Assign Sales User Dropdown -->
+              <div style="display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
+                <span style="font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">👤 Assign To:</span>
+                <select class="form-select btn-sm" id="fsAssignUser" style="padding:3px 6px;font-size:12px;border:none;background:transparent;color:var(--text);font-weight:600;cursor:pointer;">
+                  <option value="">Admin (Me)</option>
+                </select>
+              </div>
+
+              <!-- Quick Selection Buttons -->
+              <button type="button" class="btn btn-secondary btn-sm" id="fsSelectHighBtn" style="font-size:12px;padding:5px 10px;">Select High</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="fsSelectAllBtn" style="font-size:12px;padding:5px 10px;">Select All</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="fsDeselectBtn" style="font-size:12px;padding:5px 10px;">Deselect</button>
+
+              <!-- Main Action: Push to CRM -->
+              <button type="button" class="btn-primary btn-sm" id="fsSaveToCrmBtn" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:6px 14px;font-weight:700;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7.5" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                <span>Add Selected to CRM</span>
+              </button>
+
+              <!-- Extra Exports -->
+              <button type="button" class="btn btn-ghost btn-sm" id="fsDownloadCsvBtn" title="Download CSV File" style="font-size:12px;padding:5px 8px;display:inline-flex;align-items:center;gap:4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Download CSV</span>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="fsCopyEmailsBtn" title="Copy All Emails" style="font-size:12px;padding:5px 8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <span>Copy Emails</span>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="fsCopyCsvBtn" title="Copy CSV to clipboard" style="font-size:12px;padding:5px 8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>Copy CSV</span>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="fsExportJsonBtn" title="Export JSON" style="font-size:12px;padding:5px 8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                <span>JSON</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Lead Preview Table -->
+          <div style="overflow-x:auto;max-height:560px;overflow-y:auto;">
+            <table class="data" style="width:100%;font-size:12.5px;border-collapse:collapse;">
+              <thead>
+                <tr style="position:sticky;top:0;background:var(--panel);z-index:2;">
+                  <th style="width:40px;text-align:center;">
+                    <input type="checkbox" id="fsCheckAll" style="cursor:pointer;accent-color:var(--accent);">
+                  </th>
+                  <th style="width:90px;">Lead ID</th>
+                  <th style="width:240px;">Company & Website</th>
+                  <th style="width:250px;">👤 Packaging Decision Maker</th>
+                  <th style="width:280px;">🏢 Location, Address & Maps</th>
+                  <th style="width:110px;text-align:center;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="fsLeadsTableBody">
+                <!-- Dynamically Populated Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: IMPORT HISTORY -->
   <div class="tab-panel hidden" id="panelImportHistory">
     <div class="card" style="padding:0;overflow:hidden;">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
         <div>
           <h3 style="margin:0;font-size:15px;font-weight:700;">CSV Import History</h3>
           <p style="margin:2px 0 0 0;font-size:12px;color:var(--muted);">Audit log of all manual Apollo CSV import batches</p>
         </div>
-        <button class="btn-ghost btn-sm" id="refreshHistoryBtn" style="display:flex;align-items:center;gap:6px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh
-        </button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn-ghost btn-sm" id="refreshHistoryBtn" style="display:flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh
+          </button>
+          <button class="btn-ghost btn-sm" id="clearHistoryBtn" style="display:flex;align-items:center;gap:6px;color:var(--bad);" title="Clear all import log history">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear History
+          </button>
+        </div>
       </div>
       <div style="overflow-x:auto;">
         <table class="data" style="width:100%;font-size:13px;">
@@ -451,10 +765,11 @@
               <th>Duplicates</th>
               <th>Errors</th>
               <th>User</th>
+              <th style="text-align:center;width:70px;">Action</th>
             </tr>
           </thead>
           <tbody id="importHistoryTableBody">
-            <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted);">Loading history...</td></tr>
+            <tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);">Loading history...</td></tr>
           </tbody>
         </table>
       </div>

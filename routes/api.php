@@ -46,6 +46,9 @@ return function (\SLC\Core\Router $r): void {
     $r->add('POST',   'leads/import/preview', [\SLC\Controllers\ImportController::class, 'preview']);
     $r->add('POST',   'leads/import/confirm', [\SLC\Controllers\ImportController::class, 'confirm']);
     $r->add('GET',    'leads/imports', [\SLC\Controllers\ImportController::class, 'history']);
+    $r->add('GET',    'leads/imports/{id}/export-csv', [\SLC\Controllers\ImportController::class, 'exportBatchCsv']);
+    $r->add('DELETE', 'leads/imports/{id}', [\SLC\Controllers\ImportController::class, 'destroyHistory']);
+    $r->add('POST',   'leads/imports/clear', [\SLC\Controllers\ImportController::class, 'clearHistory']);
     $r->add('GET',    'leads/{id}/apollo-details', [\SLC\Controllers\ImportController::class, 'apolloDetails']);
     $r->add('GET',    'leads/{id}', [\SLC\Controllers\LeadController::class, 'show']);
     $r->add('PUT',    'leads/{id}', [\SLC\Controllers\LeadController::class, 'update']);

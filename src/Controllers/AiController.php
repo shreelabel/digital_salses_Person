@@ -166,16 +166,16 @@ class AiController extends Controller
         try {
             $data = $this->input();
             $v = new Validator($data);
-            $v->integer('count', 1, 25);
+            $v->integer('count', 1, 50);
             if ($v->fails()) {
                 Response::validationError($v->errors());
                 return;
             }
-            if (empty($data['industry']) && empty($data['keywords']) && empty($data['location']) && empty($data['city'])) {
-                Response::error('Provide at least an industry, location, city, or keywords.', 422);
+            if (empty($data['industry']) && empty($data['keywords']) && empty($data['location']) && empty($data['city']) && empty($data['role']) && empty($data['custom_title'])) {
+                Response::error('Please enter at least an Industry, Location, City, Keywords, or Role.', 422);
                 return;
             }
-            $data['count'] ??= 10;
+            $data['count'] = isset($data['count']) ? max(1, min(50, (int)$data['count'])) : 5;
             $result = AIServiceManager::leadDiscovery()->discover($data, $this->userId());
             if (!$result['ok']) {
                 $code = str_contains((string) ($result['error'] ?? ''), 'not configured') ? 503 : 502;
@@ -210,55 +210,63 @@ class AiController extends Controller
 
         Database::transaction(function () use ($prospects, $repo, $assignedTo, &$saved, &$created, &$skipped, &$details) {
             foreach ($prospects as $p) {
-                if (!is_array($p) || empty($p['name'])) {
+                $name = $p['name'] ?? $p['company_name'] ?? null;
+                if (!is_array($p) || empty($name)) {
                     continue;
                 }
                 $domain = !empty($p['website']) ? self::domain($p['website']) : null;
-                $existing = $repo->findExisting($p['name'], $domain, $p['phone'] ?? null, $p['email'] ?? null);
+                $phone = $p['phone'] ?? $p['direct_phone'] ?? $p['company_phone'] ?? null;
+                $email = $p['email'] ?? $p['direct_email'] ?? $p['contact_email'] ?? null;
+                $existing = $repo->findExisting($name, $domain, $phone, $email);
 
                 if ($existing) {
                     $companyId = (int) $existing['id'];
                     $skipped++;
-                    $details[] = ['name' => $p['name'], 'action' => 'already_in_crm', 'company_id' => $companyId];
+                    $details[] = ['name' => $name, 'action' => 'already_in_crm', 'company_id' => $companyId];
                     continue;
                 }
 
                 $fullDesc = trim(
                     (!empty($p['address']) ? ("Factory Address: " . $p['address'] . "\n") : '') .
-                    (!empty($p['why_relevant']) ? ("Packaging Requirement: " . $p['why_relevant'] . "\n") : '') .
+                    (!empty($p['google_maps_url']) ? ("Google Maps: " . $p['google_maps_url'] . "\n") : '') .
+                    (!empty($p['why_relevant']) ? ("Packaging Requirement: " . $p['why_relevant'] . "\n") : (!empty($p['products']) ? ("Products Needed: " . $p['products'] . "\n") : '')) .
                     (!empty($p['potential_label_types']) ? ("Label Types: " . (is_array($p['potential_label_types']) ? implode(', ', $p['potential_label_types']) : $p['potential_label_types'])) : '')
                 );
 
                 $companyId = $repo->create([
                     'assigned_to'   => $assignedTo,
-                    'name'          => $p['name'],
-                    'industry'      => $p['industry'] ?? null,
+                    'name'          => $name,
+                    'industry'      => $p['industry'] ?? $p['keyword'] ?? null,
                     'sub_industry'  => $p['sub_industry'] ?? null,
-                    'city'          => $p['city'] ?? null,
+                    'city'          => $p['city'] ?? $p['location'] ?? null,
                     'state'         => $p['state'] ?? null,
                     'country'       => $p['country'] ?? null,
                     'website'       => $p['website'] ?? null,
-                    'phone'         => $p['phone'] ?? null,
-                    'email'         => $p['email'] ?? $p['contact_email'] ?? null,
+                    'phone'         => $phone,
+                    'email'         => $email,
                     'employee_count'=> $p['employee_count'] ?? null,
                     'description'   => $fullDesc ?: ($p['description'] ?? null),
-                    'ai_score'      => isset($p['ai_score']) ? (int) $p['ai_score'] : null,
-                    'ai_priority'   => $p['priority'] ?? null,
-                    'source'        => 'Google Maps & AI Discovery',
+                    'ai_score'      => isset($p['ai_score']) ? (int) $p['ai_score'] : 90,
+                    'ai_priority'   => $p['priority'] ?? 'High',
+                    'source'        => $p['source'] ?? 'Google Maps & AI Discovery',
                 ]);
                 $created++;
 
                 // Contact ONLY when there is verified contact information.
                 $contactId = null;
-                if (!empty($p['contact_name']) || !empty($p['contact_email']) || !empty($p['phone'])) {
+                $contactName = $p['contact_name'] ?? $p['contact_person'] ?? null;
+                $contactDesig = $p['contact_designation'] ?? $p['designation'] ?? 'Procurement / Packaging Head';
+                $contactEmail = $p['contact_email'] ?? $p['direct_email'] ?? $p['email'] ?? null;
+                $contactPhone = $p['direct_phone'] ?? $p['phone'] ?? null;
+                if (!empty($contactName) || !empty($contactEmail) || !empty($contactPhone)) {
                     $contactId = Database::insert('slc_contacts', [
                         'assigned_to' => $assignedTo,
                         'company_id'  => $companyId,
-                        'name'        => $p['contact_name'] ?? 'Purchase / Factory Manager',
-                        'designation' => $p['contact_designation'] ?? 'Procurement / Packaging Head',
-                        'email'       => $p['contact_email'] ?? $p['email'] ?? null,
-                        'phone'       => $p['phone'] ?? null,
-                        'source'      => 'Google Maps & AI Discovery',
+                        'name'        => $contactName ?? 'Purchase / Factory Manager',
+                        'designation' => $contactDesig,
+                        'email'       => $contactEmail,
+                        'phone'       => $contactPhone,
+                        'source'      => $p['source'] ?? 'Google Maps & AI Discovery',
                         'importance'  => 'Medium',
                     ]);
                 }
@@ -268,14 +276,14 @@ class AiController extends Controller
                     'assigned_to' => $assignedTo,
                     'company_id'  => $companyId,
                     'contact_id'  => $contactId,
-                    'title'       => 'Prospect: ' . $p['name'],
-                    'industry'    => $p['industry'] ?? null,
-                    'location'    => trim(($p['city'] ?? '') . ', ' . ($p['state'] ?? ''), ', '),
+                    'title'       => 'Prospect: ' . $name,
+                    'industry'    => $p['industry'] ?? $p['keyword'] ?? null,
+                    'location'    => trim(($p['city'] ?? $p['location'] ?? '') . (isset($p['state']) ? (', ' . $p['state']) : ''), ', '),
                     'status'      => 'New',
                     'priority'    => $p['priority'] ?? 'High',
-                    'ai_score'    => isset($p['ai_score']) ? (int) $p['ai_score'] : 85,
-                    'notes'       => $fullDesc ?: ($p['why_relevant'] ?? null),
-                    'source'      => 'Google Maps & AI Discovery',
+                    'ai_score'    => isset($p['ai_score']) ? (int) $p['ai_score'] : 90,
+                    'notes'       => $fullDesc ?: ($p['why_relevant'] ?? $p['products'] ?? null),
+                    'source'      => $p['source'] ?? 'Google Maps & AI Discovery',
                 ]);
 
                 // activity log
@@ -284,12 +292,12 @@ class AiController extends Controller
                     'company_id'  => $companyId,
                     'lead_id'     => $leadId,
                     'type'        => 'ai_discovery',
-                    'description' => 'Saved AI-discovered prospect: ' . $p['name'],
-                    'meta'        => json_encode(['sources' => $p['sources'] ?? [], 'priority' => $p['priority'] ?? null]),
+                    'description' => 'Saved prospect: ' . $name,
+                    'meta'        => json_encode(['sources' => $p['sources'] ?? [], 'priority' => $p['priority'] ?? 'High']),
                 ]);
 
                 $saved++;
-                $details[] = ['name' => $p['name'], 'action' => 'created', 'company_id' => $companyId, 'lead_id' => $leadId];
+                $details[] = ['name' => $name, 'action' => 'created', 'company_id' => $companyId, 'lead_id' => $leadId];
             }
         });
 

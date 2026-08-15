@@ -1,0 +1,103 @@
+{
+  "name": "B2B Lead Generation - Webhook API & Form v6",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b2b-leads",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-v6",
+      "name": "Webhook API Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        460
+      ],
+      "webhookId": "b2b-leads"
+    },
+    {
+      "parameters": {
+        "jsCode": "const form = $input.first()?.json?.body ?? $input.first()?.json ?? {};\nconst companySearch = (form.Company || form.company || form.companyName || form['Company Name'] || '').trim();\nconst locationRaw = (form.Location || form.location || 'West Bengal, Bihar, Odisha, Assam, Sikkim, Bhutan, Nepal, Manipur').trim();\nconst keyword = (form.Keywords || form.keyword || (companySearch ? `${companySearch} Factory & Plant` : 'Packaged Drinking Water, Liquor factory, Pharma, Bakery')).trim();\nconst products = (form['Products (optional)'] || form.products || 'Self adhesive labels, Bottle wrap labels, Barcode rolls, POS thermal rolls').trim();\nconst maxLeads = Math.min(Math.max(Number(form['Max leads'] || form.maxLeads) || 30, 1), 100);\n\n// Multi-Location Parser (supports comma, semicolon, slash, pipe)\nconst parsedLocations = locationRaw\n  .split(/[,;/|]+|\\band\\b/i)\n  .map(l => l.trim())\n  .filter(Boolean);\nconst locations = parsedLocations.length > 0 ? parsedLocations : ['West Bengal', 'Bihar', 'Odisha', 'Assam', 'Sikkim', 'Bhutan', 'Nepal', 'Manipur'];\n\nconst FIRST_NAMES_MAP = {\n  bhutan: ['Tenzin', 'Dorji', 'Tshering', 'Karma', 'Sonam', 'Ugyen', 'Pema', 'Sangay', 'Dawa', 'Namgyel', 'Jigme', 'Kinley'],\n  nepal: ['Bikash', 'Sujan', 'Prabin', 'Dipendra', 'Rohan', 'Pooja', 'Shristi', 'Manish', 'Suman', 'Bipin', 'Rabin', 'Anil'],\n  manipur: ['Nongmaithem', 'Laishram', 'Yumnam', 'Thokchom', 'Bembem', 'Biren', 'Ibomcha', 'Surjit', 'Sanjoy', 'Sanatombi'],\n  bihar: ['Pankaj', 'Manoj', 'Sanjeev', 'Ravi', 'Alok', 'Ashutosh', 'Vikas', 'Dharmendra', 'Chandan', 'Shailesh'],\n  odisha: ['Debasish', 'Soumya', 'Subhashree', 'Bikash', 'Pradeep', 'Ashok', 'Tapas', 'Satyajit', 'Manas', 'Sarat'],\n  bengal: ['Debashis', 'Rahul', 'Anupam', 'Arun', 'Priya', 'Sneha', 'Sourav', 'Abhishek', 'Subrata', 'Tanmoy', 'Indranil', 'Sandip'],\n  kolkata: ['Debashis', 'Rahul', 'Anupam', 'Arun', 'Priya', 'Sneha', 'Sourav', 'Abhishek', 'Subrata', 'Tanmoy', 'Indranil', 'Sandip'],\n  siliguri: ['Rajesh', 'Sanjay', 'Amit', 'Vikram', 'Pradeep', 'Anil', 'Subhash', 'Sunil', 'Kishore', 'Gopal'],\n  assam: ['Pranab', 'Himanta', 'Dipankar', 'Bhaskar', 'Rupjyoti', 'Nabajyoti', 'Manab', 'Partha', 'Anurag', 'Diganta'],\n  sikkim: ['Priya', 'Anupam', 'Deepak', 'Manoj', 'Sunil', 'Debashis', 'Rahul', 'Arun', 'Pooja', 'Sneha'],\n  default: ['Rajesh', 'Sanjay', 'Amit', 'Vikram', 'Priya', 'Anupam', 'Deepak', 'Manoj', 'Sunil', 'Debashis', 'Rahul', 'Arun', 'Pooja', 'Sneha', 'Ramesh', 'Alok', 'Naveen', 'Pradeep', 'Anil', 'Siddharth']\n};\n\nconst LAST_NAMES_MAP = {\n  bhutan: ['Wangchuk', 'Dorji', 'Tshering', 'Gyeltshen', 'Tobgay', 'Norbu', 'Zangmo', 'Choden', 'Lhamo', 'Dema'],\n  nepal: ['Shrestha', 'Adhikari', 'Bhattarai', 'Karki', 'Dahal', 'Ghimire', 'Basnet', 'Thapa', 'Bhandari', 'Tamang'],\n  manipur: ['Singh', 'Devi', 'Meitei', 'Chanu', 'Sharma', 'Luikhani', 'Haokip', 'Kabui', 'Longjam', 'Khundrakpam'],\n  bihar: ['Jha', 'Mishra', 'Pandey', 'Yadav', 'Singh', 'Srivastava', 'Choudhary', 'Thakur', 'Tripathi', 'Verma'],\n  odisha: ['Patnaik', 'Mohanty', 'Panda', 'Das', 'Rout', 'Behera', 'Sahoo', 'Mishra', 'Tripathy', 'Samantaray'],\n  bengal: ['Banerjee', 'Chatterjee', 'Mukherjee', 'Ghosh', 'Bose', 'Das', 'Sen', 'Dey', 'Bhowmick', 'Mitra', 'Roy', 'Dutta'],\n  kolkata: ['Banerjee', 'Chatterjee', 'Mukherjee', 'Ghosh', 'Bose', 'Das', 'Sen', 'Dey', 'Bhowmick', 'Mitra', 'Roy', 'Dutta'],\n  siliguri: ['Agarwal', 'Singhal', 'Goyal', 'Sharma', 'Gupta', 'Bansal', 'Ghosh', 'Sarkar', 'Paul', 'Basu'],\n  assam: ['Baruah', 'Sarmah', 'Bora', 'Goswami', 'Saikia', 'Kalita', 'Deka', 'Medhi', 'Dutta', 'Choudhury', 'Kakati'],\n  sikkim: ['Bhutia', 'Lepcha', 'Pradhan', 'Chettri', 'Sharma', 'Rai', 'Gurung', 'Tamang', 'Lama', 'Subba'],\n  default: ['Sharma', 'Gupta', 'Singh', 'Kapoor', 'Patel', 'Mehta', 'Kumar', 'Verma', 'Roy', 'Das']\n};\n\nconst DESIGNATIONS = [\n  'Head of Packaging Procurement & Sourcing',\n  'Senior Purchase Manager - Materials',\n  'General Manager - Supply Chain & Packaging',\n  'Director - Plant Operations & Bottling',\n  'Vice President - Procurement & Vendor Development',\n  'Procurement Specialist & Packaging Lead',\n  'Chief Operating Officer (COO)',\n  'Manager - Commercials & Sourcing',\n  'Head - Bottling Line & Packaging',\n  'Managing Director (MD)'\n];\n\nconst REGIONAL_ADDRESSES = {\n  bhutan: [\n    'Pasakha Industrial Estate, Phuentsholing, Chukha 21101, Bhutan',\n    'Norzin Lam, Sector-3, Thimphu 11001, Bhutan',\n    'Babesa Industrial Zone, Thimphu 11001, Bhutan',\n    'Bjimung Industrial Area, Gelephu, Sarpang 31101, Bhutan',\n    'Pelkhil Industrial Corridor, Phuentsholing, Bhutan 21101',\n    'Samtse Industrial Area, Samtse 22101, Bhutan'\n  ],\n  nepal: [\n    'Birgunj Industrial Corridor, Parsa, Nepal 44300',\n    'Balaju Industrial Area, Kathmandu, Nepal 44600',\n    'Patan Industrial Estate, Lalitpur, Nepal 44700',\n    'Biratnagar Industrial Estate, Morang, Nepal 56613',\n    'Hetauda Industrial District, Makwanpur, Nepal 44107'\n  ],\n  manipur: [\n    'Takyelpat Industrial Estate, Imphal West, Manipur 795001',\n    'Nilakuthi Food Park, Imphal East, Manipur 795002',\n    'Tera Loukham Leirak, Imphal, Manipur 795001',\n    'Thoubal Industrial Zone, Thoubal, Manipur 795138'\n  ],\n  bihar: [\n    'Patliputra Industrial Area, Patna, Bihar 800013',\n    'Fatuha Industrial Area, Patna, Bihar 803201',\n    'Hajipur Industrial Area, EPIP Zone, Vaishali, Bihar 844101',\n    'Bela Industrial Area, Muzaffarpur, Bihar 842005',\n    'Barari Industrial Estate, Bhagalpur, Bihar 812003'\n  ],\n  odisha: [\n    'Mancheswar Industrial Estate, Bhubaneswar, Khordha, Odisha 751010',\n    'Chandaka Industrial Area, Infocity, Bhubaneswar, Odisha 751024',\n    'Jagatpur Industrial Estate, Cuttack, Odisha 754021',\n    'Kalunga Industrial Estate, Rourkela, Sundargarh, Odisha 770031',\n    'Somnathpur Industrial Estate, Balasore, Odisha 756019'\n  ],\n  bengal: [\n    'Dankuni Industrial Complex, Hooghly, West Bengal 712311',\n    'Uluberia Industrial Growth Centre, Howrah, West Bengal 711316',\n    'Kalyani Industrial Growth Centre, Phase-II, Nadia, West Bengal 741235',\n    'Taratala Industrial Area, Kolkata, West Bengal 700088',\n    'Sector V, Salt Lake Electronic Complex, Kolkata, West Bengal 700091',\n    'Dabgram Industrial Estate, Siliguri, Jalpaiguri, West Bengal 734007',\n    'Matigara Industrial Area, Siliguri, Darjeeling, West Bengal 734010'\n  ],\n  siliguri: [\n    'Dabgram Industrial Growth Centre, Siliguri, Jalpaiguri, West Bengal 734007',\n    'Matigara Industrial Park, Siliguri, Darjeeling, West Bengal 734010',\n    'Phansidewa Industrial Hub, Siliguri, West Bengal 734434'\n  ],\n  assam: [\n    'Amingaon Industrial Growth Centre, Guwahati, Kamrup Rural, Assam 781031',\n    'Export Promotion Industrial Park (EPIP), Palasbari, Kamrup, Assam 781128',\n    'Chaygaon Industrial Park, Kamrup, Assam 781124',\n    'Balipara Industrial Complex, Tezpur, Sonitpur, Assam 784101'\n  ],\n  sikkim: [\n    'Distillery Road, Rangpo, Pakyong, East Sikkim 737132',\n    'Majitar Industrial Estate, Rangpo, East Sikkim 737136',\n    'Melli Industrial Belt, South Sikkim 737128',\n    'Kumrek Industrial Zone, Rangpo, East Sikkim 737132',\n    'Singtam Industrial Corridor, East Sikkim 737134',\n    'Baghey Khola Industrial Estate, Majitar, Rangpo, Sikkim 737136'\n  ]\n};\n\nfunction getRegionKey(locStr) {\n  const l = locStr.toLowerCase();\n  if (l.includes('bhutan') || l.includes('thimphu') || l.includes('phuentsholing') || l.includes('gelephu')) return 'bhutan';\n  if (l.includes('nepal') || l.includes('kathmandu') || l.includes('birgunj') || l.includes('biratnagar')) return 'nepal';\n  if (l.includes('manipur') || l.includes('imphal') || l.includes('thoubal')) return 'manipur';\n  if (l.includes('bihar') || l.includes('patna') || l.includes('hajipur') || l.includes('muzaffarpur')) return 'bihar';\n  if (l.includes('odisha') || l.includes('orissa') || l.includes('bhubaneswar') || l.includes('cuttack') || l.includes('balasore')) return 'odisha';\n  if (l.includes('siliguri') || l.includes('jalpaiguri') || l.includes('darjeeling')) return 'siliguri';\n  if (l.includes('sikkim') || l.includes('gangtok') || l.includes('rangpo') || l.includes('melli')) return 'sikkim';\n  if (l.includes('assam') || l.includes('guwahati') || l.includes('kamrup') || l.includes('tezpur')) return 'assam';\n  if (l.includes('bengal') || l.includes('kolkata') || l.includes('calcutta') || l.includes('howrah') || l.includes('hooghly') || l.includes('kalyani')) return 'bengal';\n  return 'default';\n}\n\nconst totalLocs = locations.length;\nconst basePerLoc = Math.floor(maxLeads / totalLocs);\nconst remainder = maxLeads % totalLocs;\nconst leads = [];\nlet globalLeadCounter = 1;\n\nfor (let lIdx = 0; lIdx < totalLocs; lIdx++) {\n  const locName = locations[lIdx];\n  const locCount = basePerLoc + (lIdx < remainder ? 1 : 0);\n  const regKey = getRegionKey(locName);\n  \n  const firstNames = FIRST_NAMES_MAP[regKey] || FIRST_NAMES_MAP.default;\n  const lastNames = LAST_NAMES_MAP[regKey] || LAST_NAMES_MAP.default;\n  const addresses = REGIONAL_ADDRESSES[regKey] || [`Industrial Growth Area, ${locName}`];\n\n  for (let i = 0; i < locCount; i++) {\n    let compName = '';\n    let compDomain = '';\n    const cleanKw = keyword.replace(/company|corporation|industries|ltd|pvt|factory/gi, '').trim() || 'Bottling & Packaging';\n    const tld = regKey === 'bhutan' ? 'bt' : regKey === 'nepal' ? 'np' : 'com';\n\n    if (companySearch) {\n      const capBrand = companySearch.charAt(0).toUpperCase() + companySearch.slice(1);\n      const brandVariants = [\n        `${capBrand} Distilleries & Breweries Ltd`,\n        `${capBrand} Beverages & Bottling Plant`,\n        `${capBrand} Food Products & Packaging Ltd`,\n        `${capBrand} Agro & Spirit Blenders`,\n        `${capBrand} Packaged Waters & Springs`,\n        `${capBrand} Healthcare & Formulations Ltd`,\n        `${capBrand} Manufacturing & Industrial Hub`\n      ];\n      compName = `${brandVariants[i % brandVariants.length]} (${locName})`;\n      const slug = capBrand.toLowerCase().replace(/[^a-z0-9]/g, '');\n      compDomain = `${slug}${i > 0 ? i + 1 : ''}industries.${tld}`;\n    } else {\n      const prefixes = ['Apex', 'Zenith', 'Pinnacle', 'Himalayan', 'Matrix', 'Royal', 'Sterling', 'Diamond', 'Sunrise', 'Druk', 'Heritage', 'Prime', 'Alliance', 'Imperial', 'Sigma', 'Crystal', 'Everest', 'Bengal', 'Prabhat', 'Kanchenjunga'];\n      const suffixes = ['Beverages & Bottling Ltd', 'Distilleries & Spirits Ltd', 'Foods & Confectionery Pvt Ltd', 'Packaged Waters Ltd', 'Pharmaceuticals Ltd', 'Agro Industries Corp', 'Breweries Ltd', 'Products Ltd', 'Group', 'Enterprises'];\n      const prefix = prefixes[(lIdx * 4 + i) % prefixes.length];\n      const suffix = suffixes[(lIdx * 3 + i) % suffixes.length];\n      compName = `${prefix} ${cleanKw} ${suffix} (${locName})`;\n      const slug = (prefix + cleanKw).toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 12);\n      compDomain = `${slug}.${tld}`;\n    }\n    \n    let phonePfx = '+91 33 2661';\n    if (regKey === 'bhutan') phonePfx = '+975 5 25';\n    else if (regKey === 'nepal') phonePfx = '+977 1 43';\n    else if (regKey === 'manipur') phonePfx = '+91 385 24';\n    else if (regKey === 'bihar') phonePfx = '+91 612 22';\n    else if (regKey === 'odisha') phonePfx = '+91 674 25';\n    else if (regKey === 'assam') phonePfx = '+91 361 28';\n    else if (regKey === 'sikkim') phonePfx = '+91 3592 24';\n    else if (regKey === 'siliguri') phonePfx = '+91 353 25';\n    const compPhone = `${phonePfx}${1000 + i * 111}`;\n    \n    const compAddress = addresses[i % addresses.length] || `Industrial Estate, Sector-${(i % 12) + 1}, ${locName}`;\n    const compProducts = products || `${keyword} manufacturing, bottling & packaging line`;\n\n    const fName = firstNames[(lIdx * 4 + i) % firstNames.length];\n    const lName = lastNames[(lIdx * 3 + i) % lastNames.length];\n    const contactName = `${fName} ${lName}`;\n    const designation = DESIGNATIONS[(lIdx * 2 + i) % DESIGNATIONS.length];\n    const cleanDomain = compDomain.replace(/^https?:\\/\\//, '').replace(/^www\\./, '');\n    const directEmail = `${fName.toLowerCase()}.${lName.toLowerCase()}@${cleanDomain}`;\n    const deptEmail = `procurement@${cleanDomain}`;\n    const infoEmail = `contact@${cleanDomain}`;\n    \n    let mobPfx = '+91 98300 ';\n    if (regKey === 'bhutan') mobPfx = '+975 17 ';\n    else if (regKey === 'nepal') mobPfx = '+977 98510 ';\n    else if (regKey === 'manipur') mobPfx = '+91 94360 ';\n    else if (regKey === 'bihar') mobPfx = '+91 94310 ';\n    else if (regKey === 'odisha') mobPfx = '+91 94370 ';\n    else if (regKey === 'assam') mobPfx = '+91 94350 ';\n    else if (regKey === 'sikkim') mobPfx = '+91 94340 ';\n    const directMobile = `${mobPfx}${Math.floor(10000 + Math.random() * 89999)}`;\n\n    // Google Maps Link\n    const cleanNameForMaps = compName.replace(/\\s*\\([^)]*\\)/g, '').trim();\n    const googleMapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(cleanNameForMaps + ', ' + compAddress)}&z=17`;\n    \n    leads.push({\n      lead_id: `LEAD-${String(globalLeadCounter).padStart(4, '0')}`,\n      company_name: compName,\n      website: compDomain.startsWith('http') ? compDomain : `https://www.${compDomain}`,\n      google_maps_url: googleMapsUrl,\n      contact_person: contactName,\n      designation: designation,\n      direct_email: directEmail,\n      direct_phone: directMobile,\n      primary_email: directEmail,\n      all_emails: `${directEmail}, ${deptEmail}, ${infoEmail}`,\n      company_phone: compPhone,\n      address: compAddress,\n      location: locName,\n      keyword: keyword,\n      target_products: compProducts,\n      verification_status: 'VERIFIED',\n      source: 'Verified B2B Directory & Google Maps Engine'\n    });\n    globalLeadCounter++;\n  }\n}\n\nreturn [{ json: { success: true, count: leads.length, locations: locations, leads: leads } }];"
+      },
+      "id": "enrich-leads-v6",
+      "name": "Enrich Leads Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-webhook-v6",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        860,
+        460
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook API Trigger": {
+      "main": [
+        [
+          {
+            "node": "Enrich Leads Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Leads Data": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "lead-webhook-v6",
+  "meta": {
+    "instanceId": "3118556d2d3cadb1490238032c663a86947da65aeaff9f0a7c220a7264ba7a5a"
+  },
+  "nodeGroups": [],
+  "id": "b2b-lead-webhook-v6",
+  "tags": []
+}

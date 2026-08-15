@@ -107,6 +107,134 @@ class ImportController extends Controller
     }
 
     /**
+     * DELETE /api/leads/imports/{id}
+     * Deletes a specific import log entry.
+     */
+    public function destroyHistory(string $id): void
+    {
+        \SLC\Core\Auth::requirePermission('ai_lead_finder.use');
+        $importId = (int)$id;
+        Database::query('DELETE FROM slc_imports WHERE id = :id', ['id' => $importId]);
+        Response::success(['deleted' => true, 'id' => $importId]);
+    }
+
+    /**
+     * POST /api/leads/imports/clear
+     * Clears all import history logs.
+     */
+    public function clearHistory(): void
+    {
+        \SLC\Core\Auth::requirePermission('ai_lead_finder.use');
+        Database::query('DELETE FROM slc_imports');
+        Response::success(['cleared' => true]);
+    }
+
+    /**
+     * GET /api/leads/imports/{id}/export-csv
+     * Streams/downloads the CSV for the specified import batch.
+     */
+    public function exportBatchCsv(string $id): void
+    {
+        \SLC\Core\Auth::requirePermission('ai_lead_finder.view');
+        $importId = (int)$id;
+        $import = Database::fetch('SELECT * FROM slc_imports WHERE id = :id', ['id' => $importId]);
+        if (!$import) {
+            Response::notFound('Import record not found.');
+            return;
+        }
+
+        $batchId = $import['batch_id'];
+        $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', (string)$import['file_name']);
+        if (empty($fileName) || $fileName === '.csv') {
+            $fileName = 'imported_leads_' . $batchId . '.csv';
+        }
+        if (!str_ends_with(strtolower($fileName), '.csv')) {
+            $fileName .= '.csv';
+        }
+
+        // Fetch leads linked to this batch
+        $leads = Database::fetchAll(
+            'SELECT l.*, c.name as company_name, c.website as company_website, c.phone as company_phone,
+                    c.email as company_email, c.city as company_city, c.state as company_state,
+                    c.country as company_country, c.address as company_address, c.industry as company_industry,
+                    ct.name as contact_name, ct.first_name, ct.last_name, ct.designation,
+                    ct.email as contact_email, ct.phone as contact_phone, ct.linkedin_url
+             FROM slc_leads l
+             LEFT JOIN slc_companies c ON c.id = l.company_id
+             LEFT JOIN slc_contacts ct ON ct.id = l.contact_id
+             WHERE l.import_batch_id = :batch_id
+             ORDER BY l.id ASC',
+            ['batch_id' => $batchId]
+        );
+
+        // Send CSV headers
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $out = fopen('php://output', 'w');
+        // UTF-8 BOM for Excel compatibility
+        fwrite($out, "\xEF\xBB\xBF");
+
+        // Headers
+        fputcsv($out, [
+            'Lead ID',
+            'First Name',
+            'Last Name',
+            'Contact Person',
+            'Designation / Title',
+            'Company Name',
+            'Direct Email',
+            'Company Email',
+            'Direct Phone',
+            'Company Phone',
+            'Website',
+            'City',
+            'State / Province',
+            'Country',
+            'Address',
+            'Industry',
+            'Lead Status',
+            'Priority',
+            'AI Score',
+            'LinkedIn URL',
+            'Source',
+            'Batch ID'
+        ]);
+
+        foreach ($leads as $l) {
+            fputcsv($out, [
+                $l['id'],
+                $l['first_name'] ?: ($l['contact_name'] ? explode(' ', (string)$l['contact_name'])[0] : ''),
+                $l['last_name'] ?: ($l['contact_name'] && count(explode(' ', (string)$l['contact_name'])) > 1 ? implode(' ', array_slice(explode(' ', (string)$l['contact_name']), 1)) : ''),
+                $l['contact_name'] ?: '',
+                $l['designation'] ?: '',
+                $l['company_name'] ?: '',
+                $l['contact_email'] ?: '',
+                $l['company_email'] ?: '',
+                $l['contact_phone'] ?: '',
+                $l['company_phone'] ?: '',
+                $l['company_website'] ?: '',
+                $l['company_city'] ?: '',
+                $l['company_state'] ?: '',
+                $l['company_country'] ?: '',
+                $l['company_address'] ?: '',
+                $l['industry'] ?: ($l['company_industry'] ?: ''),
+                $l['status'] ?: 'New',
+                $l['priority'] ?: 'Medium',
+                $l['ai_score'] ?: '',
+                $l['linkedin_url'] ?: '',
+                $l['source'] ?: 'Apollo CSV',
+                $batchId
+            ]);
+        }
+
+        fclose($out);
+        exit;
+    }
+
+    /**
      * GET /api/leads/{id}/apollo-details
      * Returns the full original Apollo attributes preserved for a lead.
      */

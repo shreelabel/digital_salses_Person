@@ -33,6 +33,8 @@ $itemsToCopy = [
     'templates',
     'routes',
     'public',
+    'lead_generation',
+    'shree_label_backup_latest.json',
 ];
 
 foreach ($itemsToCopy as $item) {
