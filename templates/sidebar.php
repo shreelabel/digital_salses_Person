@@ -66,7 +66,7 @@ $hasConfigSectionPerm = Auth::can('configuration.view');
       $cVal = ($countKey && isset($sidebarCounts[$countKey])) ? (int)$sidebarCounts[$countKey] : null;
       $cText = $cVal !== null ? (string)$cVal : '0';
     ?>
-      <a href="<?= e($base) ?>/<?= e($slug) ?>" class="nav-item <?= $slug === $pageSlug ? 'active' : '' ?>">
+      <a href="<?= e($base) ?>/<?= e($slug) ?>" class="nav-item <?= $slug === $pageSlug ? 'active' : '' ?>" data-tooltip="<?= e($label) ?>" title="<?= e($label) ?>">
         <?= $icon($ic) ?><span><?= e($label) ?></span>
         <?php if ($aiTag): ?><span class="ai-pill">AI</span><?php endif; ?>
         <?php if ($countKey): ?><span class="nav-counter" data-count-key="<?= e($countKey) ?>" title="<?= e($label) ?>: <?= $cText ?>"><?= $cText ?></span><?php endif; ?>
@@ -96,7 +96,7 @@ $hasConfigSectionPerm = Auth::can('configuration.view');
     <?php endif; ?>
     <nav class="nav">
       <?php foreach ($visibleConfig as $slug => [$ic, $label]): ?>
-        <a href="<?= e($base) ?>/<?= e($slug) ?>" class="nav-item <?= $slug === $pageSlug ? 'active' : '' ?>">
+        <a href="<?= e($base) ?>/<?= e($slug) ?>" class="nav-item <?= $slug === $pageSlug ? 'active' : '' ?>" data-tooltip="<?= e($label) ?>" title="<?= e($label) ?>">
           <?= $icon($ic) ?><span><?= e($label) ?></span>
         </a>
       <?php endforeach; ?>

@@ -73,17 +73,27 @@
       const res = await R.list(params);
       const rows = (res.data || []);
       tbody.innerHTML = rows.length ? rows.map(c =>
-        '<tr class="row-link" data-view="' + c.id + '">' +
+        '<tr class="row-link" data-view="' + c.id + '" style="cursor:pointer;">' +
         '<td class="td-cb" onclick="event.stopPropagation()"><input type="checkbox" class="cb-custom company-cb" data-id="' + c.id + '"></td>' +
-        '<td><div class="strong">' + SLC.escape(c.name) + '</div><div class="muted" style="font-size:11px">' + SLC.escape(c.website || '') + '</div></td>' +
-        '<td>' + SLC.escape(c.industry || '—') + '</td>' +
-        '<td>' + SLC.escape([c.city, c.state].filter(Boolean).join(', ') || '—') + '</td>' +
-        '<td>' + SLC.ui.scoreBar(c.ai_score) + '</td>' +
-        '<td>' + SLC.ui.priorityBadge(c.ai_priority) + '</td>' +
-        '<td><span class="muted">' + SLC.escape(c.source || 'Manual') + '</span></td>' +
+        '<td class="company-cell">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,rgba(124,92,255,0.22),rgba(91,140,255,0.16));border:1px solid rgba(124,92,255,0.35);color:#c4b5fd;display:grid;place-items:center;font-size:12px;font-weight:700;flex:0 0 30px;">' +
+              SLC.escape((c.name || 'C').charAt(0).toUpperCase()) +
+            '</div>' +
+            '<div style="min-width:0;">' +
+              '<div class="strong" style="color:var(--text);font-size:13px;white-space:nowrap;">' + SLC.escape(c.name) + '</div>' +
+              (c.website ? '<a href="' + (c.website.startsWith('http') ? SLC.escape(c.website) : 'https://' + SLC.escape(c.website)) + '" target="_blank" rel="noopener noreferrer" class="muted website-link" onclick="event.stopPropagation()" style="font-size:11px;color:#93c5fd;display:inline-flex;align-items:center;gap:3px;margin-top:2px;text-decoration:none;white-space:nowrap;">🌐 ' + SLC.escape(c.website.replace(/^https?:\/\//,'').replace(/^www\./,'')) + ' ↗</a>' : '') +
+            '</div>' +
+          '</div>' +
+        '</td>' +
+        '<td class="industry-cell" style="color:var(--muted);">' + SLC.escape(c.industry || '—') + '</td>' +
+        '<td class="location-cell">' + SLC.escape([c.city, c.state].filter(Boolean).join(', ') || '—') + '</td>' +
+        '<td class="score-cell">' + SLC.ui.scoreBar(c.ai_score) + '</td>' +
+        '<td class="priority-cell">' + SLC.ui.priorityBadge(c.ai_priority) + '</td>' +
+        '<td class="source-cell"><span class="muted">' + SLC.escape(c.source || 'Manual') + '</span></td>' +
         '<td>' + SLC.assigneeBadge(c.assigned_user_name, c.assigned_at) + '</td>' +
         '<td>' + SLC.dateBadge(c.created_at) + '</td>' +
-        '<td style="text-align:right"><button class="btn-icon btn-sm" data-edit="' + c.id + '" title="Edit">✏️</button> <button class="btn-icon btn-sm" data-del="' + c.id + '" title="Delete">🗑️</button></td>' +
+        '<td style="text-align:right;white-space:nowrap;" onclick="event.stopPropagation()"><button class="btn-icon btn-sm" data-edit="' + c.id + '" title="Edit">✏️</button> <button class="btn-icon btn-sm" data-del="' + c.id + '" title="Delete">🗑️</button></td>' +
         '</tr>'
       ).join('') : '<tr><td colspan="10">' + SLC.ui.empty('No companies yet', 'Add one or run AI Lead Finder.') + '</td></tr>';
       SLC.pagerRender && SLC.pagerRender('companyPager', res, page, load, p => { page = p; load(); });

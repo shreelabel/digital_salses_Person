@@ -32,11 +32,18 @@
     </div>
   </div>
 
+  <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all follow-up notes & actions</span></div>
   <div class="table-wrap">
-    <table class="data">
+    <table class="data data-table-followups" id="followupsTable">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllFollowups" title="Select all"></th>
-        <th>When</th><th>Company</th><th>Type</th><th>Status</th><th>Assigned To</th><th>Notes</th><th style="text-align:right">Actions</th>
+        <th style="min-width:150px;">When</th>
+        <th style="min-width:180px;">Company</th>
+        <th style="min-width:120px;">Type</th>
+        <th style="min-width:120px;">Status</th>
+        <th style="min-width:160px;">Assigned To</th>
+        <th style="min-width:240px;">Notes</th>
+        <th style="min-width:90px;text-align:right;">Actions</th>
       </tr></thead>
       <tbody id="fuRows"></tbody>
     </table>

@@ -17,11 +17,18 @@
   </div>
 
   <div class="grid kpi-grid" id="oppSummary" style="margin-bottom:16px"></div>
+  <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all columns</span></div>
   <div class="table-wrap">
-    <table class="data">
+    <table class="data data-table-opportunities" id="oppsTable">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllOpps" title="Select all"></th>
-        <th>Title</th><th>Company</th><th>Stage</th><th>Amount</th><th>Probability</th><th>Close Date</th><th></th>
+        <th style="min-width:220px;">Title</th>
+        <th style="min-width:180px;">Company</th>
+        <th style="min-width:130px;">Stage</th>
+        <th style="min-width:120px;">Amount</th>
+        <th style="min-width:110px;">Probability</th>
+        <th style="min-width:140px;">Close Date</th>
+        <th style="min-width:90px;text-align:right;">Actions</th>
       </tr></thead>
       <tbody id="oppRows"></tbody>
     </table>

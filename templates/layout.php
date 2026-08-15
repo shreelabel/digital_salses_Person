@@ -11,9 +11,19 @@ $assetVer = (string) time();
 <meta name="csrf-token" content="<?= e($slcJs['csrfToken']) ?>">
 <title><?= e($pageTitle) ?> · Shree Label Digital Sales Person</title>
 <link rel="stylesheet" href="<?= e($assetBase) ?>/css/app.css?v=<?= $assetVer ?>">
+<script>
+  (function(){
+    try {
+      if (localStorage.getItem('slc_sidebar_collapsed') === '1' && window.innerWidth > 768) {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    } catch(e){}
+  })();
+</script>
 </head>
 <body>
 <div class="app">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
   <?php require __DIR__ . '/sidebar.php'; ?>
   <div class="main" id="main">
     <?php require __DIR__ . '/header.php'; ?>

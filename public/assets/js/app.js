@@ -6,10 +6,75 @@
   'use strict';
   const SLC = window.SLC || {};
 
-  // ---- Sidebar toggle (mobile) ----
+  // ---- Sidebar Desktop Collapse & Mobile Drawer ----
+  function initSidebar() {
+    const isCollapsed = localStorage.getItem('slc_sidebar_collapsed') === '1';
+    if (isCollapsed && window.innerWidth > 768) {
+      document.body.classList.add('sidebar-collapsed');
+      document.documentElement.classList.add('sidebar-collapsed');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+      document.documentElement.classList.remove('sidebar-collapsed');
+    }
+  }
+
+  function toggleDesktopSidebar() {
+    const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+    document.documentElement.classList.toggle('sidebar-collapsed', isCollapsed);
+    localStorage.setItem('slc_sidebar_collapsed', isCollapsed ? '1' : '0');
+    window.dispatchEvent(new Event('resize'));
+  }
+
+  function closeMobileSidebar() {
+    document.getElementById('sidebar')?.classList.remove('open');
+    document.getElementById('sidebarBackdrop')?.classList.remove('active');
+    document.body.classList.remove('sidebar-locked');
+  }
+
+  function openMobileSidebar() {
+    document.getElementById('sidebar')?.classList.add('open');
+    document.getElementById('sidebarBackdrop')?.classList.add('active');
+    document.body.classList.add('sidebar-locked');
+  }
+
+  // Initialize on load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSidebar);
+  } else {
+    initSidebar();
+  }
+
   document.addEventListener('click', function (e) {
-    if (e.target.closest('#menuToggle')) {
-      document.getElementById('sidebar')?.classList.toggle('open');
+    // Sidebar toggle button (in topbar)
+    if (e.target.closest('#sidebarToggleBtn, #menuToggle')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.innerWidth <= 768) {
+        const sb = document.getElementById('sidebar');
+        if (sb && sb.classList.contains('open')) {
+          closeMobileSidebar();
+        } else {
+          openMobileSidebar();
+        }
+      } else {
+        toggleDesktopSidebar();
+      }
+      return;
+    }
+
+    // Backdrop or nav item on mobile
+    if (e.target.closest('#sidebarBackdrop') || (window.innerWidth <= 768 && e.target.closest('#sidebar .nav-item'))) {
+      closeMobileSidebar();
+    }
+  });
+
+  // Keyboard shortcut Alt+S to toggle sidebar on desktop
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey && (e.key === 's' || e.key === 'S')) {
+      if (window.innerWidth > 768) {
+        e.preventDefault();
+        toggleDesktopSidebar();
+      }
     }
   });
 
@@ -129,18 +194,18 @@
     if (!iso) return '<span class="muted">—</span>';
     const full = SLC.formatDate(iso, true);
     const rel = SLC.rel(iso);
-    return `<div style="font-size:12px;color:var(--text);" title="${SLC.escape(full)}">📅 ${SLC.escape(full)} <span class="muted" style="font-size:10.5px;">(${SLC.escape(rel)})</span></div>`;
+    return `<div class="date-badge" style="font-size:12px;color:var(--text);white-space:nowrap;" title="${SLC.escape(full)}">📅 ${SLC.escape(full)} <span class="muted" style="font-size:10.5px;">(${SLC.escape(rel)})</span></div>`;
   };
 
   SLC.assigneeBadge = function (userName, assignedAt) {
-    if (!userName) return '<span class="muted">— Unassigned</span>';
+    if (!userName) return '<span class="muted" style="white-space:nowrap;">— Unassigned</span>';
     let timeHtml = '';
     if (assignedAt) {
       const full = SLC.formatDate(assignedAt, true);
       const rel = SLC.rel(assignedAt);
-      timeHtml = `<div class="muted" style="font-size:10px;margin-top:2px;" title="Assigned on: ${SLC.escape(full)}">📅 Assigned: ${SLC.escape(full)} <span style="opacity:0.85">(${SLC.escape(rel)})</span></div>`;
+      timeHtml = `<div class="muted" style="font-size:10px;margin-top:2px;white-space:nowrap;" title="Assigned on: ${SLC.escape(full)}">📅 Assigned: ${SLC.escape(full)} <span style="opacity:0.85">(${SLC.escape(rel)})</span></div>`;
     }
-    return `<div><span class="badge" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:11px;">👤 ${SLC.escape(userName)}</span>${timeHtml}</div>`;
+    return `<div class="assignee-wrap" style="white-space:nowrap;"><span class="badge" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:11px;white-space:nowrap;">👤 ${SLC.escape(userName)}</span>${timeHtml}</div>`;
   };
 
   SLC.money = function (v) {

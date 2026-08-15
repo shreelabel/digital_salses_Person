@@ -29,6 +29,7 @@
       </div>
     </div>
 
+    <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all user roles & permissions</span></div>
     <div class="tbl-wrap" style="overflow-x:auto;">
       <table class="tbl" id="usersTable">
         <thead>

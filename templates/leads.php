@@ -33,11 +33,21 @@
     </div>
   </div>
 
+  <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all lead details & follow-up dates</span></div>
   <div class="table-wrap">
-    <table class="data">
+    <table class="data data-table-leads" id="leadsTable">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllLeads" title="Select all"></th>
-        <th>Company</th><th>Industry</th><th>Location</th><th>Status</th><th>Priority</th><th>AI Score</th><th>Value</th><th>Assigned To</th><th>Next Follow-up</th><th></th>
+        <th style="min-width:200px;">Company</th>
+        <th style="min-width:150px;">Industry</th>
+        <th style="min-width:150px;">Location</th>
+        <th style="min-width:110px;">Status</th>
+        <th style="min-width:100px;">Priority</th>
+        <th style="min-width:110px;">AI Score</th>
+        <th style="min-width:110px;">Value</th>
+        <th style="min-width:160px;">Assigned To</th>
+        <th style="min-width:150px;">Next Follow-up</th>
+        <th style="min-width:90px;text-align:right;">Actions</th>
       </tr></thead>
       <tbody id="leadRows"></tbody>
     </table>

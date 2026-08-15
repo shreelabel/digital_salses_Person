@@ -711,8 +711,9 @@
           </div>
 
           <!-- Lead Preview Table -->
-          <div style="overflow-x:auto;max-height:560px;overflow-y:auto;">
-            <table class="data" style="width:100%;font-size:12.5px;border-collapse:collapse;">
+          <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all columns & phone numbers</span></div>
+          <div class="table-wrap" style="overflow-x:auto;max-height:560px;overflow-y:auto;">
+            <table class="data" style="width:100%;min-width:1050px;font-size:12.5px;border-collapse:collapse;">
               <thead>
                 <tr style="position:sticky;top:0;background:var(--panel);z-index:2;">
                   <th style="width:40px;text-align:center;">
@@ -753,8 +754,9 @@
           </button>
         </div>
       </div>
-      <div style="overflow-x:auto;">
-        <table class="data" style="width:100%;font-size:13px;">
+      <div class="table-scroll-hint" style="margin: 8px 16px 0;"><span>⇄ Swipe / Scroll horizontally to view all history details</span></div>
+      <div class="table-wrap" style="overflow-x:auto;">
+        <table class="data" style="width:100%;min-width:1050px;font-size:13px;">
           <thead>
             <tr>
               <th>Date / Time</th>

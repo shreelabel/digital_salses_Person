@@ -53,7 +53,7 @@
 
   async function load() {
     const tbody = document.getElementById('contactRows');
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px">' + SLC.ui.spinner() + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px">' + SLC.ui.spinner() + '</td></tr>';
     try {
       const params = { page, per_page: 25 };
       if (q) params.q = q;
@@ -65,18 +65,18 @@
       tbody.innerHTML = (res.data || []).length ? (res.data || []).map(c =>
         '<tr class="row-link" data-edit="' + c.id + '" style="cursor:pointer;">' +
         '<td class="td-cb" onclick="event.stopPropagation()"><input type="checkbox" class="cb-custom contact-cb" data-id="' + c.id + '"></td>' +
-        '<td><div class="strong">' + SLC.escape(c.name) + '</div>' + (c.is_decision_maker ? '<span class="badge badge-purple" style="margin-top:3px">Decision maker</span>' : '') + '</td>' +
-        '<td>' + SLC.escape(c.company_name || '—') + '</td>' +
-        '<td>' + SLC.escape(c.designation || '—') + '</td>' +
-        '<td>' + SLC.escape(c.department || '—') + '</td>' +
-        '<td>' + SLC.escape(c.email || '—') + '</td>' +
-        '<td>' + SLC.escape(c.phone || c.mobile || '—') + '</td>' +
-        '<td>' + (c.is_primary == 1 ? '★' : '—') + '</td>' +
+        '<td class="name-cell"><div class="strong" style="color:var(--text);">' + SLC.escape(c.name) + '</div>' + (c.is_decision_maker ? '<span class="badge badge-purple" style="margin-top:3px;display:inline-flex;">Decision maker</span>' : '') + '</td>' +
+        '<td class="company-cell">' + (c.company_name ? '<div style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--accent2);opacity:0.9;">🏢</span><span class="strong" style="color:var(--text);">' + SLC.escape(c.company_name) + '</span></div>' : '<span class="muted">—</span>') + '</td>' +
+        '<td class="designation-cell" style="color:var(--muted);">' + SLC.escape(c.designation || '—') + '</td>' +
+        '<td class="dept-cell" style="color:var(--muted2);">' + SLC.escape(c.department || '—') + '</td>' +
+        '<td class="email-cell">' + (c.email ? '<a href="mailto:' + SLC.escape(c.email) + '" class="email-link" onclick="event.stopPropagation()" style="color:#93c5fd;text-decoration:none;">' + SLC.escape(c.email) + '</a>' : '<span class="muted">—</span>') + '</td>' +
+        '<td class="phone-cell">' + (c.phone || c.mobile ? '<a href="tel:' + SLC.escape(c.phone || c.mobile) + '" class="phone-link" onclick="event.stopPropagation()" style="color:var(--good);text-decoration:none;font-weight:500;">' + SLC.escape(c.phone || c.mobile) + '</a>' : '<span class="muted">—</span>') + '</td>' +
+        '<td style="text-align:center;">' + (c.is_primary == 1 ? '<span style="color:#f59e0b;font-size:14px;" title="Primary Contact">★</span>' : '<span class="muted">—</span>') + '</td>' +
         '<td>' + SLC.assigneeBadge(c.assigned_user_name, c.assigned_at) + '</td>' +
         '<td>' + SLC.dateBadge(c.created_at) + '</td>' +
-        '<td style="text-align:right"><button class="btn-icon btn-sm" data-edit="' + c.id + '" title="Edit">✏️</button> <button class="btn-icon btn-sm" data-del="' + c.id + '" title="Delete">🗑️</button></td>' +
+        '<td style="text-align:right;white-space:nowrap;" onclick="event.stopPropagation()"><button class="btn-icon btn-sm" data-edit="' + c.id + '" title="Edit">✏️</button> <button class="btn-icon btn-sm" data-del="' + c.id + '" title="Delete">🗑️</button></td>' +
         '</tr>'
-      ).join('') : '<tr><td colspan="10">' + SLC.ui.empty('No contacts yet', '') + '</td></tr>';
+      ).join('') : '<tr><td colspan="11">' + SLC.ui.empty('No contacts yet', '') + '</td></tr>';
       SLC.pagerRender('contactPager', res, page, load, p => { page = p; load(); });
       bulk && bulk.update();
     } catch (e) { SLC.toast(e.message, 'error'); }

@@ -17,11 +17,17 @@
     </div>
   </div>
 
+  <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all research reports</span></div>
   <div class="table-wrap">
-    <table class="data">
+    <table class="data" id="reportsTable">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllReports" title="Select all"></th>
-        <th>Company</th><th>Industry</th><th>Confidence</th><th>Sources</th><th>Generated</th><th style="text-align:right">Actions</th>
+        <th style="min-width:200px;">Company</th>
+        <th style="min-width:160px;">Industry</th>
+        <th style="min-width:130px;">Confidence</th>
+        <th style="min-width:120px;">Sources</th>
+        <th style="min-width:160px;">Generated</th>
+        <th style="min-width:90px;text-align:right;">Actions</th>
       </tr></thead>
       <tbody id="reportRows"></tbody>
     </table>

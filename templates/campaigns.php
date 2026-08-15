@@ -21,11 +21,18 @@
     </div>
   </div>
 
+  <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all campaign details</span></div>
   <div class="table-wrap">
-    <table class="data">
+    <table class="data" id="campaignsTable">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllCampaigns" title="Select all"></th>
-        <th>Campaign</th><th>Objective</th><th>Audience</th><th>Leads</th><th>Status</th><th>Period</th><th style="text-align:right">Actions</th>
+        <th style="min-width:200px;">Campaign</th>
+        <th style="min-width:180px;">Objective</th>
+        <th style="min-width:160px;">Audience</th>
+        <th style="min-width:90px;">Leads</th>
+        <th style="min-width:110px;">Status</th>
+        <th style="min-width:160px;">Period</th>
+        <th style="min-width:90px;text-align:right;">Actions</th>
       </tr></thead>
       <tbody id="campRows"></tbody>
     </table>

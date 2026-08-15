@@ -23,11 +23,20 @@
     </div>
   </div>
 
+  <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all columns</span></div>
   <div class="table-wrap">
-    <table class="data">
+    <table class="data data-table-companies" id="companiesTable">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllCompanies" title="Select all"></th>
-        <th>Company</th><th>Industry</th><th>Location</th><th>AI Score</th><th>Priority</th><th>Source</th><th>Assigned To</th><th>Added Date</th><th></th>
+        <th style="min-width:210px;">Company</th>
+        <th style="min-width:160px;">Industry</th>
+        <th style="min-width:160px;">Location</th>
+        <th style="min-width:120px;">AI Score</th>
+        <th style="min-width:100px;">Priority</th>
+        <th style="min-width:110px;">Source</th>
+        <th style="min-width:170px;">Assigned To</th>
+        <th style="min-width:160px;">Added Date</th>
+        <th style="min-width:90px;text-align:right;">Actions</th>
       </tr></thead>
       <tbody id="companyRows"></tbody>
     </table>

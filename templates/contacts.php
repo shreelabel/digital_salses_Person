@@ -21,11 +21,21 @@
     </div>
   </div>
 
+  <div class="table-scroll-hint"><span>⇄ Swipe / Scroll horizontally to view all contacts, phone numbers & actions</span></div>
   <div class="table-wrap">
-    <table class="data">
+    <table class="data data-table-contacts" id="contactsTable">
       <thead><tr>
         <th class="th-cb"><input type="checkbox" class="cb-custom" id="selectAllContacts" title="Select all"></th>
-        <th>Name</th><th>Company</th><th>Designation</th><th>Department</th><th>Email</th><th>Phone</th><th>Primary</th><th>Assigned To</th><th>Date Added</th><th></th>
+        <th style="min-width:170px;">Name</th>
+        <th style="min-width:180px;">Company</th>
+        <th style="min-width:160px;">Designation</th>
+        <th style="min-width:130px;">Department</th>
+        <th style="min-width:210px;">Email</th>
+        <th style="min-width:160px;">Phone / Mobile</th>
+        <th style="min-width:70px;text-align:center;">Primary</th>
+        <th style="min-width:170px;">Assigned To</th>
+        <th style="min-width:160px;">Date Added</th>
+        <th style="min-width:90px;text-align:right;">Actions</th>
       </tr></thead>
       <tbody id="contactRows"></tbody>
     </table>
