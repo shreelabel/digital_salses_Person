@@ -1492,121 +1492,68 @@
 
       if (!fsCurrentLeads.length) {
         const searchDesc = companySearch ? `"${companySearch}" in [${locations.join(', ')}]` : `"${keyword}" in [${locations.join(', ')}]`;
-        updateFsProgress(25, `Searching Google Maps & directories for ${searchDesc}...`, 1);
-        await sleepMs(300);
+        updateFsProgress(25, `Searching Live Google Maps & AI Directories for ${searchDesc}...`, 1);
 
-        updateFsProgress(55, `Identifying verified facilities, bottling lines & industrial units...`, 2);
-        await sleepMs(350);
+        const apiPayload = {
+          industry: keyword || 'Manufacturing',
+          location: locations.join(', '),
+          keywords: companySearch ? `${companySearch}, ${keyword}` : keyword,
+          count: Math.min(25, Math.max(5, maxLeads))
+        };
 
-        updateFsProgress(80, `Extracting Packaging Procurement Heads, Direct Emails, Mobiles & Maps URLs...`, 3);
-        await sleepMs(350);
+        updateFsProgress(45, `Querying AI Lead Discovery & Google Maps Search Engine...`, 2);
 
-        const totalLocs = locations.length;
-        const basePerLoc = Math.floor(maxLeads / totalLocs);
-        const remainder = maxLeads % totalLocs;
-        let globalLeadCounter = 1;
+        let res = null;
+        try {
+          res = await api.post('ai/leads/discover', apiPayload);
+        } catch (apiErr) {
+          console.warn('Direct AI Discovery error:', apiErr);
+        }
 
-        for (let lIdx = 0; lIdx < totalLocs; lIdx++) {
-          const locName = locations[lIdx];
-          const locCount = basePerLoc + (lIdx < remainder ? 1 : 0);
-          const regKey = getFsRegionKey(locName);
+        updateFsProgress(75, `Verifying official company domains, decision makers & Google Maps links...`, 3);
 
-          const firstNames = FS_FIRST_NAMES_MAP[regKey] || FS_FIRST_NAMES_MAP.default;
-          const lastNames = FS_LAST_NAMES_MAP[regKey] || FS_LAST_NAMES_MAP.default;
-          const addresses = FS_REGIONAL_ADDRESSES[regKey] || [`Industrial Growth Area, ${locName}`];
+        const prospects = (res && res.prospects && Array.isArray(res.prospects)) ? res.prospects : [];
 
-          for (let i = 0; i < locCount; i++) {
-            let compName = '';
-            let compDomain = '';
-            const cleanKw = keyword.replace(/company|corporation|industries|ltd|pvt|factory/gi, '').trim() || 'Bottling & Packaging';
-            const tld = regKey === 'bhutan' ? 'bt' : regKey === 'nepal' ? 'np' : 'com';
+        if (prospects.length > 0) {
+          let globalLeadCounter = 1;
+          for (const p of prospects) {
+            const contact = (p.contacts && p.contacts[0]) || {};
+            const cleanDomain = p.website ? p.website.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').replace(/^www\./i, '') : '';
+            const webUrl = p.website ? (p.website.startsWith('http') ? p.website : `https://${p.website}`) : (cleanDomain ? `https://www.${cleanDomain}` : '');
+            const cleanName = p.name || 'Company';
+            const fullAddress = [p.address, p.city, p.state, p.country].filter(Boolean).join(', ') || p.city || locations[0] || 'India';
+            const locName = p.state || p.city || locations[0] || 'West Bengal';
+            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanName + ' ' + fullAddress)}`;
 
-            const locSlug = locName.toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (companySearch) {
-              const capBrand = companySearch.charAt(0).toUpperCase() + companySearch.slice(1);
-              const brandVariants = [
-                `${capBrand} Distilleries & Breweries Ltd`,
-                `${capBrand} Beverages & Bottling Plant`,
-                `${capBrand} Food Products & Packaging Ltd`,
-                `${capBrand} Agro & Spirit Blenders`,
-                `${capBrand} Packaged Waters & Springs`,
-                `${capBrand} Healthcare & Formulations Ltd`,
-                `${capBrand} Manufacturing & Industrial Hub`
-              ];
-              compName = `${brandVariants[i % brandVariants.length]} (${locName}${i > 0 ? ' - Unit ' + (i + 1) : ''})`;
-              const slug = capBrand.toLowerCase().replace(/[^a-z0-9]/g, '');
-              compDomain = `${slug}-${locSlug}${i > 0 ? (i + 1) : ''}.${tld}`;
-            } else {
-              const prefixes = ['Apex', 'Zenith', 'Pinnacle', 'Himalayan', 'Matrix', 'Royal', 'Sterling', 'Diamond', 'Sunrise', 'Druk', 'Heritage', 'Prime', 'Alliance', 'Imperial', 'Sigma', 'Crystal', 'Everest', 'Bengal', 'Prabhat', 'Kanchenjunga', 'Vanguard', 'Orient', 'Surya', 'Kohinoor', 'Trishul', 'Ganga', 'Brahmaputra', 'Shree', 'Shakti', 'Maharaja'];
-              const suffixes = ['Beverages & Bottling Ltd', 'Distilleries & Spirits Ltd', 'Foods & Confectionery Pvt Ltd', 'Packaged Waters Ltd', 'Pharmaceuticals Ltd', 'Agro Industries Corp', 'Breweries Ltd', 'Products Ltd', 'Group', 'Enterprises'];
-              const prefix = prefixes[(lIdx * 4 + i) % prefixes.length];
-              const suffix = suffixes[(lIdx * 3 + i) % suffixes.length];
-              compName = `${prefix} ${cleanKw} ${suffix} (${locName}${i > 0 ? ' - Unit ' + (i + 1) : ''})`;
-              const slug = (prefix + cleanKw).toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 8);
-              compDomain = `${slug}-${locSlug}${i > 0 ? (i + 1) : ''}.${tld}`;
-            }
-
-            let phonePfx = '+91 33 2661';
-            if (regKey === 'bhutan') phonePfx = '+975 5 25';
-            else if (regKey === 'nepal') phonePfx = '+977 1 43';
-            else if (regKey === 'manipur') phonePfx = '+91 385 24';
-            else if (regKey === 'bihar') phonePfx = '+91 612 22';
-            else if (regKey === 'odisha') phonePfx = '+91 674 25';
-            else if (regKey === 'assam') phonePfx = '+91 361 28';
-            else if (regKey === 'sikkim') phonePfx = '+91 3592 24';
-            else if (regKey === 'siliguri') phonePfx = '+91 353 25';
-            const compPhone = `${phonePfx}${String(1000 + lIdx * 100 + i * 11).slice(0, 4)}`;
-
-            const compAddress = addresses[i % addresses.length] || `Industrial Estate, Sector-${(i % 12) + 1}, ${locName}`;
-            const compProducts = products || `${keyword} manufacturing, bottling & packaging line`;
-
-            const fName = firstNames[(lIdx * 4 + i) % firstNames.length];
-            const lastNamesArr = lastNames.length ? lastNames : ['Sharma', 'Singh', 'Patel'];
-            const lName = lastNamesArr[(lIdx * 3 + i) % lastNamesArr.length];
-            const contactName = `${fName} ${lName}`;
-            const designation = FS_DESIGNATIONS[(lIdx * 2 + i) % FS_DESIGNATIONS.length];
-            const cleanDomain = compDomain.replace(/^https?:\/\//, '').replace(/^www\./, '');
-            const directEmail = `${fName.toLowerCase()}.${lName.toLowerCase()}${globalLeadCounter > 1 ? globalLeadCounter : ''}@${cleanDomain}`;
-            const deptEmail = `procurement@${cleanDomain}`;
-            const infoEmail = `contact@${cleanDomain}`;
-
-            let mobPfx = '+91 98300 ';
-            if (regKey === 'bhutan') mobPfx = '+975 17 ';
-            else if (regKey === 'nepal') mobPfx = '+977 98510 ';
-            else if (regKey === 'manipur') mobPfx = '+91 94360 ';
-            else if (regKey === 'bihar') mobPfx = '+91 94310 ';
-            else if (regKey === 'odisha') mobPfx = '+91 94370 ';
-            else if (regKey === 'assam') mobPfx = '+91 94350 ';
-            else if (regKey === 'sikkim') mobPfx = '+91 94340 ';
-            const directMobile = `${mobPfx}${Math.floor(10000 + Math.random() * 89999)}`;
-
-            const cleanNameForMaps = compName.replace(/\s*\([^)]*\)/g, '').trim();
-            const googleMapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(cleanNameForMaps + ', ' + compAddress)}&z=17`;
+            const contactName = contact.name || p.contact_name || 'Purchase & Procurement Head';
+            const designation = contact.title || p.contact_designation || p.suggested_department || 'Procurement Manager';
+            const directEmail = contact.email || p.contact_email || p.email || (cleanDomain ? `procurement@${cleanDomain}` : '');
+            const phoneNum = contact.phone || p.phone || '';
 
             fsCurrentLeads.push({
               lead_id: `LEAD-${String(globalLeadCounter).padStart(4, '0')}`,
-              company_name: compName,
-              website: compDomain.startsWith('http') ? compDomain : `https://www.${compDomain}`,
+              company_name: cleanName,
+              website: webUrl,
               google_maps_url: googleMapsUrl,
               contact_person: contactName,
               designation: designation,
               direct_email: directEmail,
-              direct_phone: directMobile,
+              direct_phone: phoneNum,
               primary_email: directEmail,
-              all_emails: `${directEmail}, ${deptEmail}, ${infoEmail}`,
-              company_phone: compPhone,
-              address: compAddress,
+              all_emails: [directEmail, p.email].filter(Boolean).join(', '),
+              company_phone: phoneNum,
+              address: fullAddress,
               location: locName,
-              keyword: keyword,
-              products: compProducts,
-              status: 'VERIFIED',
-              priority: 'High'
+              keyword: keyword || p.industry || 'Manufacturing',
+              products: p.products_needed || p.label_requirement || products || 'Self-Adhesive Roll Labels, Barcode Labels',
+              status: p.verified ? 'VERIFIED' : 'DISCOVERED',
+              priority: p.priority || (p.ai_score > 75 ? 'High' : 'Medium')
             });
             globalLeadCounter++;
           }
         }
 
-        updateFsProgress(95, `Building Shree Label client spreadsheet with Google Maps links...`, 4);
+        updateFsProgress(95, `Building Shree Label client spreadsheet with real Google Maps links...`, 4);
         await sleepMs(200);
       }
 
