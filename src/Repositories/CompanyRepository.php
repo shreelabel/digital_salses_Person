@@ -47,13 +47,69 @@ class CompanyRepository extends BaseRepository
     public function buildWhere(array $filters, string $prefix = 'c'): array
     {
         [$where, $params] = parent::buildWhere($filters, $prefix);
-        foreach (['industry', 'city', 'state', 'source', 'ai_priority'] as $f) {
+        foreach (['industry', 'city', 'state', 'country', 'source', 'ai_priority'] as $f) {
             if (!empty($filters[$f])) {
                 $where .= " AND {$prefix}.{$f} = :f_{$f}";
                 $params['f_' . $f] = $filters[$f];
             }
         }
+        if (!empty($filters['location'])) {
+            $loc = trim((string) $filters['location']);
+            $where .= " AND ({$prefix}.city = :f_loc1 OR {$prefix}.state = :f_loc2 OR {$prefix}.country = :f_loc3 OR {$prefix}.city LIKE :f_loc4 OR {$prefix}.state LIKE :f_loc5 OR {$prefix}.country LIKE :f_loc6)";
+            $params['f_loc1'] = $loc;
+            $params['f_loc2'] = $loc;
+            $params['f_loc3'] = $loc;
+            $params['f_loc4'] = '%' . $loc . '%';
+            $params['f_loc5'] = '%' . $loc . '%';
+            $params['f_loc6'] = '%' . $loc . '%';
+        }
         return [$where, $params];
+    }
+
+    /** Return dynamic distinct filter options currently in the database */
+    public function getFilterOptions(): array
+    {
+        $scopedUserId = \SLC\Core\Auth::scopedUserId();
+        $scopeExtra = '';
+        $params = [];
+        if ($scopedUserId !== null) {
+            $scopeExtra = " AND assigned_to = :uid";
+            $params['uid'] = $scopedUserId;
+        }
+
+        $industries = Database::fetchAll(
+            "SELECT DISTINCT industry FROM slc_companies WHERE deleted_at IS NULL AND industry IS NOT NULL AND TRIM(industry) != '' {$scopeExtra} ORDER BY industry ASC",
+            $params
+        );
+        $cities = Database::fetchAll(
+            "SELECT DISTINCT city FROM slc_companies WHERE deleted_at IS NULL AND city IS NOT NULL AND TRIM(city) != '' {$scopeExtra} ORDER BY city ASC",
+            $params
+        );
+        $states = Database::fetchAll(
+            "SELECT DISTINCT state FROM slc_companies WHERE deleted_at IS NULL AND state IS NOT NULL AND TRIM(state) != '' {$scopeExtra} ORDER BY state ASC",
+            $params
+        );
+        $countries = Database::fetchAll(
+            "SELECT DISTINCT country FROM slc_companies WHERE deleted_at IS NULL AND country IS NOT NULL AND TRIM(country) != '' {$scopeExtra} ORDER BY country ASC",
+            $params
+        );
+
+        $locations = [];
+        foreach (array_merge($countries, $states, $cities) as $r) {
+            $val = trim((string) reset($r));
+            if ($val !== '' && !in_array($val, $locations, true)) {
+                $locations[] = $val;
+            }
+        }
+        sort($locations, SORT_STRING | SORT_FLAG_CASE);
+
+        return [
+            'industries' => array_values(array_filter(array_map(fn($r) => trim((string)$r['industry']), $industries))),
+            'locations' => $locations,
+            'cities' => array_values(array_filter(array_map(fn($r) => trim((string)$r['city']), $cities))),
+            'states' => array_values(array_filter(array_map(fn($r) => trim((string)$r['state']), $states))),
+            'countries' => array_values(array_filter(array_map(fn($r) => trim((string)$r['country']), $countries))),
+        ];
     }
 
     public function paginate(array $filters = [], int $page = 1, int $perPage = 20, string $orderBy = 'id', string $dir = 'DESC'): array

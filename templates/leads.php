@@ -5,13 +5,15 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="leadSearch" placeholder="Search leads, industry, location…">
     </div>
+    <select class="filter" id="leadIndustry"><option value="">All Industries</option></select>
+    <select class="filter" id="leadLocation"><option value="">All Locations</option></select>
     <select class="filter" id="leadStatus">
-      <option value="">All statuses</option>
+      <option value="">All Statuses</option>
       <option>New</option><option>Contacted</option><option>Interested</option><option>Requirement</option><option>Quotation</option><option>Negotiation</option><option>Won</option><option>Lost</option>
     </select>
-    <select class="filter" id="leadPriority"><option value="">All priority</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <select class="filter" id="leadPriority"><option value="">All Priority</option><option>High</option><option>Medium</option><option>Low</option></select>
     <select class="filter" id="leadSource">
-      <option value="">All sources</option>
+      <option value="">All Sources</option>
       <option value="Apollo CSV">Apollo CSV</option>
       <option value="AI Lead Discovery">AI Discovery</option>
       <option value="Manual">Manual</option>
@@ -28,6 +30,7 @@
         <option value="">Assign to...</option>
       </select>
       <button class="btn-secondary btn-sm" id="leadBulkAssignBtn">👤 Assign</button>
+      <button class="btn-secondary btn-sm" id="leadBulkWaBtn" style="background:rgba(37,211,102,0.12);border-color:rgba(37,211,102,0.4);color:#25D366;font-weight:600;">💬 Copy WhatsApp Msg</button>
       <button class="btn-danger btn-sm" id="leadBulkDeleteBtn">🗑️ Delete Selected</button>
       <button class="btn-ghost btn-sm" id="leadBulkClearBtn">Cancel</button>
     </div>

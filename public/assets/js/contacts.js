@@ -50,6 +50,25 @@
   function f(n, l, t) { return '<div class="field"><label class="fld">' + l + '</label><input class="fld" name="' + n + '" type="' + (t || 'text') + '"></div>'; }
 
   let bulk;
+  let currentContactsList = [];
+
+  async function loadFilterOptions() {
+    try {
+      const res = await api.get('contacts/filter-options');
+      const desigSel = document.getElementById('contactDesignation');
+      const locSel = document.getElementById('contactLocation');
+      if (desigSel && res.designations) {
+        const curVal = desigSel.value;
+        desigSel.innerHTML = '<option value="">All Designations</option>' + res.designations.map(d => `<option value="${SLC.escape(d)}">${SLC.escape(d)}</option>`).join('');
+        if (curVal) desigSel.value = curVal;
+      }
+      if (locSel && res.locations) {
+        const curVal = locSel.value;
+        locSel.innerHTML = '<option value="">All Locations</option>' + res.locations.map(l => `<option value="${SLC.escape(l)}">${SLC.escape(l)}</option>`).join('');
+        if (curVal) locSel.value = curVal;
+      }
+    } catch (e) {}
+  }
 
   async function load() {
     const tbody = document.getElementById('contactRows');
@@ -57,12 +76,17 @@
     try {
       const params = { page, per_page: 25 };
       if (q) params.q = q;
+      const desig = document.getElementById('contactDesignation')?.value;
+      const loc = document.getElementById('contactLocation')?.value;
       const dm = document.getElementById('contactDm')?.value;
       const assigned = document.getElementById('contactAssignedUser')?.value;
+      if (desig) params.designation = desig;
+      if (loc) params.location = loc;
       if (dm) params.is_decision_maker = dm;
       if (assigned) params.assigned_to = assigned;
       const res = await R.list(params);
-      tbody.innerHTML = (res.data || []).length ? (res.data || []).map(c =>
+      currentContactsList = res.data || [];
+      tbody.innerHTML = currentContactsList.length ? currentContactsList.map(c =>
         '<tr class="row-link" data-edit="' + c.id + '" style="cursor:pointer;">' +
         '<td class="td-cb" onclick="event.stopPropagation()"><input type="checkbox" class="cb-custom contact-cb" data-id="' + c.id + '"></td>' +
         '<td class="name-cell"><div class="strong" style="color:var(--text);">' + SLC.escape(c.name) + '</div>' + (c.is_decision_maker ? '<span class="badge badge-purple" style="margin-top:3px;display:inline-flex;">Decision maker</span>' : '') + '</td>' +
@@ -136,12 +160,33 @@
         return;
       }
       const targetUserText = document.getElementById('contactBulkAssignSelect')?.options[document.getElementById('contactBulkAssignSelect')?.selectedIndex]?.text || 'User';
+      const cleanTargetName = targetUserText.replace(/\s*\([^)]*\)/g, '').trim();
       try {
         const res = await api.post('contacts/bulk-assign', {
           ids: selectedIds,
           assigned_to: targetUserId,
         });
-        SLC.toast(`Assigned ${res.count || selectedIds.length} contact(s) to ${targetUserText}!`, 'success');
+        SLC.toast(`Assigned ${res.count || selectedIds.length} contact(s) to ${cleanTargetName}!`, 'success');
+        
+        // Find assigned contact details
+        const assignedItems = (currentContactsList || []).filter(c => selectedIds.includes(parseInt(c.id, 10))).map(c => ({
+          name: c.name,
+          contact_name: c.name,
+          company_name: c.company_name,
+          designation: c.designation,
+          phone: c.phone || c.mobile,
+          email: c.email,
+          location: [c.city, c.state].filter(Boolean).join(', '),
+        }));
+
+        if (assignedItems.length && typeof SLC.openWhatsAppShareModal === 'function') {
+          SLC.openWhatsAppShareModal({
+            assignedToName: cleanTargetName,
+            items: assignedItems,
+            typeLabel: 'Contacts',
+          });
+        }
+
         bulk.clear();
         load();
         if (SLC.refreshSidebarCounters) SLC.refreshSidebarCounters();
@@ -150,11 +195,39 @@
       }
     });
 
+    // Dedicated WhatsApp Share button for selected contacts
+    document.getElementById('contactBulkWaBtn')?.addEventListener('click', () => {
+      const selectedIds = bulk ? bulk.getSelected().map(Number) : [];
+      if (!selectedIds.length) {
+        SLC.toast('Select contacts from table first to copy WhatsApp message.', 'warn');
+        return;
+      }
+      const targetUserText = document.getElementById('contactBulkAssignSelect')?.options[document.getElementById('contactBulkAssignSelect')?.selectedIndex]?.text || 'Sales Team';
+      const cleanTargetName = targetUserText === 'Assign to...' ? 'Sales Team' : targetUserText.replace(/\s*\([^)]*\)/g, '').trim();
+      const selectedItems = (currentContactsList || []).filter(c => selectedIds.includes(parseInt(c.id, 10))).map(c => ({
+        name: c.name,
+        contact_name: c.name,
+        company_name: c.company_name,
+        designation: c.designation,
+        phone: c.phone || c.mobile,
+        email: c.email,
+        location: [c.city, c.state].filter(Boolean).join(', '),
+      }));
+      if (selectedItems.length && typeof SLC.openWhatsAppShareModal === 'function') {
+        SLC.openWhatsAppShareModal({
+          assignedToName: cleanTargetName,
+          items: selectedItems,
+          typeLabel: 'Contacts',
+        });
+      }
+    });
+
     await loadCompanies();
     await loadUsers();
+    await loadFilterOptions();
     load();
     document.getElementById('contactSearch')?.addEventListener('input', e => { clearTimeout(debounce); debounce = setTimeout(() => { q = e.target.value.trim(); page = 1; load(); }, 300); });
-    ['contactDm', 'contactAssignedUser'].forEach(id => {
+    ['contactDesignation', 'contactLocation', 'contactDm', 'contactAssignedUser'].forEach(id => {
       document.getElementById(id)?.addEventListener('change', () => { page = 1; load(); });
     });
     document.getElementById('addContactBtn')?.addEventListener('click', () => openModal(null));

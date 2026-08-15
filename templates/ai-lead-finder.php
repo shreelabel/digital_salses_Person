@@ -227,6 +227,7 @@
           <button class="btn btn-secondary btn-sm" data-sel="high">Select High Priority</button>
           <button class="btn btn-secondary btn-sm" data-sel="all">Select All</button>
           <button class="btn btn-secondary btn-sm" data-sel="none">Deselect All</button>
+          <button class="btn btn-secondary btn-sm" id="lfCopyWaBtn" style="background:rgba(37,211,102,0.12);border-color:rgba(37,211,102,0.4);color:#25D366;font-weight:600;">💬 Copy WhatsApp Msg</button>
           <button class="btn btn-secondary btn-sm" id="lfDownloadCsvBtn" title="Download Leads as CSV file" style="display:inline-flex;align-items:center;gap:5px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Download CSV
@@ -295,31 +296,46 @@
       </div>
 
       <!-- Statistics KPI Grid -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-bottom:18px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;margin-bottom:18px;">
         <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;">
-          <div style="font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;">Rows Detected</div>
-          <div id="kpiTotalRows" style="font-size:24px;font-weight:800;color:var(--text);margin-top:4px;">25</div>
-          <div style="font-size:11px;color:var(--muted2);margin-top:2px;">From CSV file</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;">Total CSV Rows</div>
+          <div id="kpiTotalRows" style="font-size:22px;font-weight:800;color:var(--text);margin-top:4px;">0</div>
+          <div id="kpiPreservedCols" style="font-size:11px;color:var(--muted2);margin-top:2px;">71 Columns Preserved</div>
         </div>
-        <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:14px;">
-          <div style="font-size:11.5px;color:var(--good);font-weight:600;text-transform:uppercase;">New Leads</div>
-          <div id="kpiNewLeads" style="font-size:24px;font-weight:800;color:var(--good);margin-top:4px;">25</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">Ready to create</div>
+        <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.25);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#60a5fa;font-weight:700;text-transform:uppercase;">Original In Apollo</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:4px;display:flex;flex-direction:column;gap:2px;">
+            <span>📞 Phone: <strong id="kpiOrigPhone" style="color:#60a5fa;">0</strong></span>
+            <span>✉️ Email: <strong id="kpiOrigEmail" style="color:#60a5fa;">0</strong></span>
+          </div>
         </div>
-        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px;">
-          <div style="font-size:11.5px;color:var(--warn);font-weight:600;text-transform:uppercase;">Existing in CRM</div>
-          <div id="kpiExistingLeads" style="font-size:24px;font-weight:800;color:var(--warn);margin-top:4px;">0</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">Will be skipped</div>
+        <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:var(--good);font-weight:700;text-transform:uppercase;">⚡ Fetched (Free Search)</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:4px;display:flex;flex-direction:column;gap:2px;">
+            <span>📞 Phone: <strong id="kpiFsPhone" style="color:var(--good);">0</strong></span>
+            <span>✉️ Email: <strong id="kpiFsEmail" style="color:var(--good);">0</strong></span>
+          </div>
+        </div>
+        <div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.25);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#c084fc;font-weight:700;text-transform:uppercase;">🎯 Fetched (Hunter)</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:4px;display:flex;flex-direction:column;gap:2px;">
+            <span>📞 Phone: <strong id="kpiHunterPhone" style="color:#c084fc;">0</strong></span>
+            <span>✉️ Email: <strong id="kpiHunterEmail" style="color:#c084fc;">0</strong></span>
+          </div>
         </div>
         <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:14px;">
-          <div style="font-size:11.5px;color:#ff8e8e;font-weight:600;text-transform:uppercase;">In-File Duplicates</div>
-          <div id="kpiInFileDup" style="font-size:24px;font-weight:800;color:#ff8e8e;margin-top:4px;">0</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">Repeated rows</div>
+          <div style="font-size:11px;color:var(--bad);font-weight:700;text-transform:uppercase;">❌ Still Missing</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:4px;display:flex;flex-direction:column;gap:2px;">
+            <span>📞 Phone: <strong id="kpiMissingPhone" style="color:var(--bad);">0</strong></span>
+            <span>✉️ Email: <strong id="kpiMissingEmail" style="color:var(--bad);">0</strong></span>
+          </div>
         </div>
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;">
-          <div style="font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;">Preserved Columns</div>
-          <div id="kpiPreservedCols" style="font-size:24px;font-weight:800;color:var(--accent);margin-top:4px;">71</div>
-          <div style="font-size:11px;color:var(--muted2);margin-top:2px;">100% full dataset</div>
+        <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:var(--good);font-weight:700;text-transform:uppercase;">CRM Status</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:4px;display:flex;flex-direction:column;gap:2px;">
+            <span>✓ New: <strong id="kpiNewLeads" style="color:var(--good);">0</strong></span>
+            <span>⚠ Exists: <strong id="kpiExistingLeads" style="color:var(--warn);">0</strong></span>
+          </div>
         </div>
       </div>
 
@@ -689,6 +705,7 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7.5" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                 <span>Add Selected to CRM</span>
               </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="fsCopyWaBtn" style="background:rgba(37,211,102,0.12);border-color:rgba(37,211,102,0.4);color:#25D366;font-weight:600;font-size:12px;padding:5px 10px;">💬 Copy WhatsApp</button>
 
               <!-- Extra Exports -->
               <button type="button" class="btn btn-ghost btn-sm" id="fsDownloadCsvBtn" title="Download CSV File" style="font-size:12px;padding:5px 8px;display:inline-flex;align-items:center;gap:4px;">

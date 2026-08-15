@@ -33,6 +33,11 @@ class ContactController extends Controller
         Response::success($result);
     }
 
+    public function filterOptions(): void
+    {
+        Response::success($this->contacts->getFilterOptions());
+    }
+
     public function store(): void
     {
         $data = $this->input();

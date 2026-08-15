@@ -67,6 +67,25 @@
   }
 
   let bulk;
+  let currentLeadsList = [];
+
+  async function loadFilterOptions() {
+    try {
+      const res = await api.get('leads/filter-options');
+      const indSel = document.getElementById('leadIndustry');
+      const locSel = document.getElementById('leadLocation');
+      if (indSel && res.industries) {
+        const curVal = indSel.value;
+        indSel.innerHTML = '<option value="">All Industries</option>' + res.industries.map(i => `<option value="${SLC.escape(i)}">${SLC.escape(i)}</option>`).join('');
+        if (curVal) indSel.value = curVal;
+      }
+      if (locSel && res.locations) {
+        const curVal = locSel.value;
+        locSel.innerHTML = '<option value="">All Locations</option>' + res.locations.map(l => `<option value="${SLC.escape(l)}">${SLC.escape(l)}</option>`).join('');
+        if (curVal) locSel.value = curVal;
+      }
+    } catch (e) {}
+  }
 
   async function load() {
     const tbody = document.getElementById('leadRows');
@@ -74,16 +93,21 @@
     try {
       const params = { page, per_page: 25 };
       if (q) params.q = q;
+      const ind = document.getElementById('leadIndustry')?.value;
+      const loc = document.getElementById('leadLocation')?.value;
       const st = document.getElementById('leadStatus')?.value;
       const pr = document.getElementById('leadPriority')?.value;
       const src = document.getElementById('leadSource')?.value;
       const assigned = document.getElementById('leadAssignedUser')?.value;
+      if (ind) params.industry = ind;
+      if (loc) params.location = loc;
       if (st) params.status = st;
       if (pr) params.priority = pr;
       if (src) params.source = src;
       if (assigned) params.assigned_to = assigned;
       const res = await R.list(params);
-      tbody.innerHTML = (res.data || []).length ? (res.data || []).map(l => {
+      currentLeadsList = res.data || [];
+      tbody.innerHTML = currentLeadsList.length ? currentLeadsList.map(l => {
         const contactInfo = l.contact_name ? `<div style="font-size:11.5px;color:#10b981;font-weight:600;margin-top:3px;display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;"><span style="color:#10b981;">👤 ${SLC.escape(l.contact_name)}</span>${l.contact_designation ? '<span style="color:#34d399;font-size:10.5px;background:rgba(16,185,129,0.14);border:1px solid rgba(16,185,129,0.25);padding:1px 6px;border-radius:4px;font-weight:500;">' + SLC.escape(l.contact_designation) + '</span>' : ''}</div>` : '';
         const isApollo = l.source === 'Apollo CSV';
         const apolloAction = isApollo ? `<button class="btn-icon btn-sm" data-apollo-view="${l.id}" title="Inspect 70+ Apollo Fields" style="color:var(--accent);">🔍</button> ` : '';
@@ -206,13 +230,35 @@
         return;
       }
       const targetUserText = document.getElementById('leadBulkAssignSelect')?.options[document.getElementById('leadBulkAssignSelect')?.selectedIndex]?.text || 'User';
+      const cleanTargetName = targetUserText.replace(/\s*\([^)]*\)/g, '').trim();
       try {
         const res = await api.post('leads/bulk-assign', {
           ids: selectedIds,
           assigned_to: targetUserId,
           cascade_company_contact: 1,
         });
-        SLC.toast(`Assigned ${res.count || selectedIds.length} lead(s) to ${targetUserText}!`, 'success');
+        SLC.toast(`Assigned ${res.count || selectedIds.length} lead(s) to ${cleanTargetName}!`, 'success');
+        
+        const assignedItems = (currentLeadsList || []).filter(l => selectedIds.includes(parseInt(l.id, 10))).map(l => ({
+          name: l.title || l.company_name,
+          company_name: l.company_name,
+          contact_name: l.contact_name,
+          designation: l.contact_designation,
+          phone: l.contact_phone || l.company_phone,
+          email: l.contact_email || l.company_email,
+          location: l.location,
+          industry: l.industry,
+          requirement: l.notes || '',
+        }));
+
+        if (assignedItems.length && typeof SLC.openWhatsAppShareModal === 'function') {
+          SLC.openWhatsAppShareModal({
+            assignedToName: cleanTargetName,
+            items: assignedItems,
+            typeLabel: 'Leads',
+          });
+        }
+
         bulk.clear();
         load();
         if (SLC.refreshSidebarCounters) SLC.refreshSidebarCounters();
@@ -221,11 +267,41 @@
       }
     });
 
+    // Dedicated WhatsApp Share button for selected leads
+    document.getElementById('leadBulkWaBtn')?.addEventListener('click', () => {
+      const selectedIds = bulk ? bulk.getSelected().map(Number) : [];
+      if (!selectedIds.length) {
+        SLC.toast('Select leads from table first to copy WhatsApp message.', 'warn');
+        return;
+      }
+      const targetUserText = document.getElementById('leadBulkAssignSelect')?.options[document.getElementById('leadBulkAssignSelect')?.selectedIndex]?.text || 'Sales Team';
+      const cleanTargetName = targetUserText === 'Assign to...' ? 'Sales Team' : targetUserText.replace(/\s*\([^)]*\)/g, '').trim();
+      const selectedItems = (currentLeadsList || []).filter(l => selectedIds.includes(parseInt(l.id, 10))).map(l => ({
+        name: l.title || l.company_name,
+        company_name: l.company_name,
+        contact_name: l.contact_name,
+        designation: l.contact_designation,
+        phone: l.contact_phone || l.company_phone,
+        email: l.contact_email || l.company_email,
+        location: l.location,
+        industry: l.industry,
+        requirement: l.notes || '',
+      }));
+      if (selectedItems.length && typeof SLC.openWhatsAppShareModal === 'function') {
+        SLC.openWhatsAppShareModal({
+          assignedToName: cleanTargetName,
+          items: selectedItems,
+          typeLabel: 'Leads',
+        });
+      }
+    });
+
     await loadCompanies();
     await loadUsers();
+    await loadFilterOptions();
     load();
-    document.getElementById('leadSearch').addEventListener('input', e => { clearTimeout(debounce); debounce = setTimeout(() => { q = e.target.value.trim(); page = 1; load(); }, 300); });
-    ['leadStatus', 'leadPriority', 'leadSource', 'leadAssignedUser'].forEach(id => {
+    document.getElementById('leadSearch')?.addEventListener('input', e => { clearTimeout(debounce); debounce = setTimeout(() => { q = e.target.value.trim(); page = 1; load(); }, 300); });
+    ['leadIndustry', 'leadLocation', 'leadStatus', 'leadPriority', 'leadSource', 'leadAssignedUser'].forEach(id => {
       document.getElementById(id)?.addEventListener('change', () => { page = 1; load(); });
     });
     document.getElementById('addLeadBtn').addEventListener('click', () => openModal(null));

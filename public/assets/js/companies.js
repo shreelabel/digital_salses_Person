@@ -57,6 +57,25 @@
   }
 
   let bulk;
+  let currentCompaniesList = [];
+
+  async function loadFilterOptions() {
+    try {
+      const res = await api.get('companies/filter-options');
+      const indSel = document.getElementById('companyIndustry');
+      const locSel = document.getElementById('companyLocation');
+      if (indSel && res.industries) {
+        const curVal = indSel.value;
+        indSel.innerHTML = '<option value="">All Industries</option>' + res.industries.map(i => `<option value="${SLC.escape(i)}">${SLC.escape(i)}</option>`).join('');
+        if (curVal) indSel.value = curVal;
+      }
+      if (locSel && res.locations) {
+        const curVal = locSel.value;
+        locSel.innerHTML = '<option value="">All Locations</option>' + res.locations.map(l => `<option value="${SLC.escape(l)}">${SLC.escape(l)}</option>`).join('');
+        if (curVal) locSel.value = curVal;
+      }
+    } catch (e) {}
+  }
 
   async function load() {
     const tbody = document.getElementById('companyRows');
@@ -65,13 +84,16 @@
       const params = { page: page, per_page: 20 };
       if (q) params.q = q;
       const ind = document.getElementById('companyIndustry')?.value;
+      const loc = document.getElementById('companyLocation')?.value;
       const pr = document.getElementById('companyPriority')?.value;
       const assigned = document.getElementById('companyAssignedUser')?.value;
       if (ind) params.industry = ind;
+      if (loc) params.location = loc;
       if (pr) params.ai_priority = pr;
       if (assigned) params.assigned_to = assigned;
       const res = await R.list(params);
-      const rows = (res.data || []);
+      currentCompaniesList = (res.data || []);
+      const rows = currentCompaniesList;
       tbody.innerHTML = rows.length ? rows.map(c =>
         '<tr class="row-link" data-view="' + c.id + '" style="cursor:pointer;">' +
         '<td class="td-cb" onclick="event.stopPropagation()"><input type="checkbox" class="cb-custom company-cb" data-id="' + c.id + '"></td>' +
@@ -108,14 +130,15 @@
       const c = res.company;
       const contacts = c.contacts || [], leads = c.leads || [], acts = c.activities || [], reports = c.research_reports || [];
       m.el.querySelector('.slideover-body').innerHTML =
+        '<div class="section-title">Company Info</div>' +
         '<div class="detail-row"><span class="k">Name</span><span class="v">' + SLC.escape(c.name) + '</span></div>' +
-        SLC.ui.field('Industry', c.industry) + SLC.ui.field('Sub-industry', c.sub_industry) +
-        SLC.ui.field('Location', [c.city, c.state, c.country].filter(Boolean).join(', ')) +
-        SLC.ui.field('Website', c.website) + SLC.ui.field('Phone', c.phone) + SLC.ui.field('Email', c.email) +
-        SLC.ui.field('Employees', c.employee_count) + SLC.ui.field('Source', c.source) +
-        '<div class="detail-row"><span class="k">AI Score</span><span class="v">' + SLC.ui.scoreBar(c.ai_score) + '</span></div>' +
-        '<div class="detail-row"><span class="k">Priority</span><span class="v">' + SLC.ui.priorityBadge(c.ai_priority) + '</span></div>' +
-        (c.description ? '<div class="detail-row"><span class="k">Description</span><span class="v" style="max-width:100%">' + SLC.escape(c.description) + '</span></div>' : '') +
+        '<div class="detail-row"><span class="k">Industry</span><span class="v">' + SLC.escape(c.industry || '—') + '</span></div>' +
+        '<div class="detail-row"><span class="k">Location</span><span class="v">' + SLC.escape([c.city, c.state, c.country].filter(Boolean).join(', ') || '—') + '</span></div>' +
+        '<div class="detail-row"><span class="k">Website</span><span class="v">' + (c.website ? '<a href="' + SLC.escape(c.website) + '" target="_blank">' + SLC.escape(c.website) + '</a>' : '—') + '</span></div>' +
+        '<div class="detail-row"><span class="k">Phone</span><span class="v">' + SLC.escape(c.phone || '—') + '</span></div>' +
+        '<div class="detail-row"><span class="k">Email</span><span class="v">' + SLC.escape(c.email || '—') + '</span></div>' +
+        '<div class="detail-row"><span class="k">AI Priority</span><span class="v">' + SLC.ui.priorityBadge(c.ai_priority) + '</span></div>' +
+        '<div class="detail-row"><span class="k">AI Score</span><span class="v">' + (c.ai_score ?? '—') + '/100</span></div>' +
         '<div class="section-title" style="margin-top:18px">Contacts (' + contacts.length + ')</div>' +
         (contacts.length ? contacts.map(x => '<div class="detail-row"><span class="k">' + SLC.escape(x.name) + (x.is_primary ? ' ★' : '') + '</span><span class="v">' + SLC.escape(x.designation || x.email || '—') + '</span></div>').join('') : '<div class="muted">None</div>') +
         '<div class="section-title" style="margin-top:18px">Leads (' + leads.length + ')</div>' +
@@ -176,12 +199,31 @@
         return;
       }
       const targetUserText = document.getElementById('companyBulkAssignSelect')?.options[document.getElementById('companyBulkAssignSelect')?.selectedIndex]?.text || 'User';
+      const cleanTargetName = targetUserText.replace(/\s*\([^)]*\)/g, '').trim();
       try {
         const res = await api.post('companies/bulk-assign', {
           ids: selectedIds,
           assigned_to: targetUserId,
         });
-        SLC.toast(`Assigned ${res.count || selectedIds.length} company(ies) to ${targetUserText}!`, 'success');
+        SLC.toast(`Assigned ${res.count || selectedIds.length} company(ies) to ${cleanTargetName}!`, 'success');
+        
+        const assignedItems = (currentCompaniesList || []).filter(c => selectedIds.includes(parseInt(c.id, 10))).map(c => ({
+          name: c.name,
+          company_name: c.name,
+          phone: c.phone,
+          email: c.email,
+          location: [c.city, c.state].filter(Boolean).join(', '),
+          industry: c.industry,
+        }));
+
+        if (assignedItems.length && typeof SLC.openWhatsAppShareModal === 'function') {
+          SLC.openWhatsAppShareModal({
+            assignedToName: cleanTargetName,
+            items: assignedItems,
+            typeLabel: 'Companies',
+          });
+        }
+
         bulk.clear();
         load();
         if (SLC.refreshSidebarCounters) SLC.refreshSidebarCounters();
@@ -190,12 +232,37 @@
       }
     });
 
+    // Dedicated WhatsApp Share button for selected companies
+    document.getElementById('companyBulkWaBtn')?.addEventListener('click', () => {
+      const selectedIds = bulk ? bulk.getSelected().map(Number) : [];
+      if (!selectedIds.length) {
+        SLC.toast('Select companies from table first to copy WhatsApp message.', 'warn');
+        return;
+      }
+      const targetUserText = document.getElementById('companyBulkAssignSelect')?.options[document.getElementById('companyBulkAssignSelect')?.selectedIndex]?.text || 'Sales Team';
+      const cleanTargetName = targetUserText === 'Assign to...' ? 'Sales Team' : targetUserText.replace(/\s*\([^)]*\)/g, '').trim();
+      const selectedItems = (currentCompaniesList || []).filter(c => selectedIds.includes(parseInt(c.id, 10))).map(c => ({
+        name: c.name,
+        company_name: c.name,
+        phone: c.phone,
+        email: c.email,
+        location: [c.city, c.state].filter(Boolean).join(', '),
+        industry: c.industry,
+      }));
+      if (selectedItems.length && typeof SLC.openWhatsAppShareModal === 'function') {
+        SLC.openWhatsAppShareModal({
+          assignedToName: cleanTargetName,
+          items: selectedItems,
+          typeLabel: 'Companies',
+        });
+      }
+    });
+
     await loadUsers();
+    await loadFilterOptions();
     load();
-    const ind = document.getElementById('companyIndustry');
-    if (ind) INDUSTRIES.forEach(i => ind.appendChild(new Option(i, i)));
     document.getElementById('companySearch')?.addEventListener('input', e => { clearTimeout(debounce); debounce = setTimeout(() => { q = e.target.value.trim(); page = 1; load(); }, 300); });
-    ['companyIndustry', 'companyPriority', 'companyAssignedUser'].forEach(id => {
+    ['companyIndustry', 'companyLocation', 'companyPriority', 'companyAssignedUser'].forEach(id => {
       document.getElementById(id)?.addEventListener('change', () => { page = 1; load(); });
     });
     document.getElementById('addCompanyBtn')?.addEventListener('click', () => openModal(null));

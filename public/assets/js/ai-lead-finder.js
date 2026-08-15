@@ -241,34 +241,99 @@
       const res = await api.post('ai/leads/discover', payload);
       completeAnimation(() => {
         if (res.ok === false) {
-          SLC.toast(res.error || 'AI could not find prospects for this query.', 'error');
           prospects = [];
-          renderReview(res);
-          renderSummary({ total: 0, verified: 0, high: 0, medium: 0, in_crm: 0 }, res);
+          showDiscoveryFallbackModal(payload, res.error || 'AI could not find prospects for this query.');
           return;
         }
         prospects = (res.prospects || []).filter(p => p.name);
         
+        if (prospects.length === 0) {
+          showDiscoveryFallbackModal(payload, 'No prospects found matching your criteria.');
+          return;
+        }
+        
         renderSummary(res.summary || summarize(prospects), res);
         renderReview(res);
-        if (prospects.length > 0) {
-          SLC.toast('Discovered ' + prospects.length + ' targeted prospect(s)!', 'success');
-          setTimeout(() => {
-            const rev = $('lfReview');
-            if (rev) {
-              rev.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }, 150);
-        } else {
-          SLC.toast('No prospects met the selected filters. Try broadening your criteria.', 'warn');
-        }
+        SLC.toast('Discovered ' + prospects.length + ' targeted prospect(s)!', 'success');
+        setTimeout(() => {
+          const rev = $('lfReview');
+          if (rev) {
+            rev.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 150);
       });
     } catch (e) {
       stopAnimation();
-      SLC.toast(e.message || 'Discovery request failed', 'error');
-      $('prospectsReviewContainer').innerHTML = SLC.ui.empty('Discovery error', e.message);
+      showDiscoveryFallbackModal(payload, e.message || 'Discovery request failed');
     } finally {
       btn.disabled = false; btn.innerHTML = orig; loadStatus();
+    }
+  }
+
+  /**
+   * Fallback Confirmation Modal — shown when Google Maps / Factory Discovery
+   * returns 0 results or errors. Asks user if they want to use Free Search as backup.
+   */
+  function showDiscoveryFallbackModal(originalPayload, errorMsg) {
+    const m = SLC.modal.open({
+      title: '🔍 Discovery Found No Results',
+      body: `
+        <div style="text-align:center;padding:10px 0;">
+          <div style="width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:rgba(245,158,11,0.15);color:var(--warn);display:grid;place-items:center;font-size:24px;">⚠️</div>
+          <p style="font-size:14px;color:var(--text);font-weight:600;margin:0 0 8px;">Google Maps & Factory Discovery could not find results.</p>
+          <p style="font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:440px;margin-left:auto;margin-right:auto;">${SLC.escape(errorMsg)}</p>
+          <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:14px 18px;text-align:left;max-width:440px;margin:0 auto;">
+            <p style="font-size:13px;font-weight:700;color:var(--good);margin:0 0 6px;">💡 Would you like to fetch leads using the Free AI Search Engine as a fallback?</p>
+            <p style="font-size:12px;color:var(--muted);margin:0;">The Free Search engine will use AI-powered regional lead discovery to find relevant companies and decision makers for your search criteria.</p>
+          </div>
+        </div>
+      `,
+      footer: '<button class="btn-ghost" data-close>Cancel</button><button class="btn-primary" id="fallbackConfirmBtn" style="background:linear-gradient(135deg,#10b981,#059669);border-color:#10b981;">⚡ Yes, Use Free Search Fallback</button>',
+    });
+
+    m.el.querySelector('#fallbackConfirmBtn')?.addEventListener('click', async () => {
+      m.close();
+      await executeFallbackFreeSearch(originalPayload);
+    });
+  }
+
+  /**
+   * Execute Free Search internally on the current Discovery page as fallback.
+   */
+  async function executeFallbackFreeSearch(payload) {
+    // Switch to Free Search tab and pre-fill fields from Discovery payload
+    SLC.toast('⚡ Switching to Free AI Search Engine as fallback...', 'info');
+
+    // Switch tab
+    switchTab('free-search');
+
+    // Pre-fill free search fields with discovery payload data
+    const locationInput = $('fsLocationInput');
+    const keywordInput = $('fsKeywordInput');
+    if (locationInput) {
+      locationInput.value = payload.location || payload.city || 'West Bengal, Bihar, Odisha';
+    }
+    if (keywordInput) {
+      keywordInput.value = payload.industry || payload.keywords || 'manufacturing';
+    }
+
+    // Show a fallback notification banner on the Free Search panel
+    const fsPanel = $('panelFreeSearch');
+    if (fsPanel) {
+      let existingBanner = fsPanel.querySelector('.fallback-banner');
+      if (existingBanner) existingBanner.remove();
+      const banner = document.createElement('div');
+      banner.className = 'fallback-banner';
+      banner.style.cssText = 'background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08));border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:13px;';
+      banner.innerHTML = '<span style="font-size:18px;">⚡</span><span><strong style="color:var(--good);">Fallback Active:</strong> <span style="color:var(--text);">Google Maps / Factory Discovery returned no results. Free AI Search Engine is ready — click "Generate Leads" to search.</span></span>';
+      fsPanel.prepend(banner);
+    }
+
+    // Auto-trigger the free search generation
+    await sleepMs(500);
+    const submitBtn = $('fsSubmitBtn');
+    if (submitBtn) {
+      submitBtn.click();
     }
   }
 
@@ -477,6 +542,26 @@
         assigned_to: assignedTo,
       });
       SLC.toast(`Saved ${res.saved} prospect(s) to CRM (Assigned to: ${assignUserText})!`, 'success');
+      
+      // WhatsApp share modal for assigned prospects
+      if (assignedTo && chosen.length && typeof SLC.openWhatsAppShareModal === 'function') {
+        const cleanName = assignUserText.replace(/\s*\([^)]*\)/g, '').trim();
+        const waItems = chosen.map(p => ({
+          name: p.name,
+          company_name: p.name || p.company_name,
+          phone: p.phone || (p.contacts && p.contacts[0] && p.contacts[0].phone),
+          email: p.email || p.contact_email || (p.contacts && p.contacts[0] && p.contacts[0].email),
+          designation: p.contact_designation || (p.contacts && p.contacts[0] && p.contacts[0].designation),
+          location: p.address || p.city,
+          industry: p.industry,
+        }));
+        SLC.openWhatsAppShareModal({
+          assignedToName: cleanName,
+          items: waItems,
+          typeLabel: 'AI Discovered Leads',
+        });
+      }
+
       $('lfReview').classList.add('hidden'); $('lfSummary').innerHTML = '';
       localStorage.removeItem('slc_last_ai_leads');
       if (SLC.refreshSidebarCounters) SLC.refreshSidebarCounters();
@@ -594,10 +679,20 @@
     $('apolloRowCount').textContent = data.total_rows || 0;
 
     $('kpiTotalRows').textContent = data.total_rows || 0;
-    $('kpiNewLeads').textContent = data.new_leads_count || 0;
-    $('kpiExistingLeads').textContent = data.existing_leads_count || 0;
-    $('kpiInFileDup').textContent = data.in_file_duplicate_count || 0;
-    $('kpiPreservedCols').textContent = data.total_columns || 71;
+    if ($('kpiPreservedCols')) $('kpiPreservedCols').textContent = (data.total_columns || 71) + ' Columns Preserved';
+    if ($('kpiNewLeads')) $('kpiNewLeads').textContent = data.new_leads_count || 0;
+    if ($('kpiExistingLeads')) $('kpiExistingLeads').textContent = data.existing_leads_count || 0;
+
+    // Enrichment Stats from backend
+    const st = data.stats || {};
+    if ($('kpiOrigPhone')) $('kpiOrigPhone').textContent = st.orig_apollo_phone ?? 0;
+    if ($('kpiOrigEmail')) $('kpiOrigEmail').textContent = st.orig_apollo_email ?? 0;
+    if ($('kpiFsPhone')) $('kpiFsPhone').textContent = st.free_search_phone ?? 0;
+    if ($('kpiFsEmail')) $('kpiFsEmail').textContent = st.free_search_email ?? 0;
+    if ($('kpiHunterPhone')) $('kpiHunterPhone').textContent = st.hunter_phone ?? 0;
+    if ($('kpiHunterEmail')) $('kpiHunterEmail').textContent = st.hunter_email ?? 0;
+    if ($('kpiMissingPhone')) $('kpiMissingPhone').textContent = st.still_missing_phone ?? 0;
+    if ($('kpiMissingEmail')) $('kpiMissingEmail').textContent = st.still_missing_email ?? 0;
 
     const btnText = $('apolloConfirmBtnText');
     const toImportCount = data.new_leads_count;
@@ -700,9 +795,13 @@
           <td>
             <div>${row.email ? '<a href="mailto:' + SLC.escape(row.email) + '" style="color:var(--accent);">' + SLC.escape(row.email) + '</a>' : '<span style="color:var(--muted2);">—</span>'} ${emailStatus}</div>
             ${emailCatchAll}
+            ${row.email_source && row.email_source !== 'Apollo' && row.email_source !== 'Not Found' ? '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--good);margin-top:2px;display:inline-block;">⚡ ' + SLC.escape(row.email_source) + '</span>' : ''}
+            ${row.email_source === 'Not Found' ? '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:var(--bad);margin-top:2px;display:inline-block;">❌ Not Found</span>' : ''}
           </td>
           <td>
             <div>${SLC.escape(row.phone || row.work_phone || row.mobile || '—')}</div>
+            ${row.phone_source && row.phone_source !== 'Apollo' && row.phone_source !== 'Not Found' ? '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--good);margin-top:2px;display:inline-block;">⚡ ' + SLC.escape(row.phone_source) + '</span>' : ''}
+            ${row.phone_source === 'Not Found' ? '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:var(--bad);margin-top:2px;display:inline-block;">❌ Not Found</span>' : ''}
           </td>
           <td>
             <div>${SLC.escape([row.city, row.state, row.country].filter(Boolean).join(', ') || '—')}</div>
@@ -773,6 +872,7 @@
   function openApolloRowInspector(row) {
     const rawData = row.raw_apollo_data || {};
     const keys = Object.keys(rawData);
+    const hasPhone = Boolean(row.phone || row.work_phone || row.mobile);
 
     const formatVal = (v) => {
       if (v === null || v === undefined || v === '') return '<span style="color:var(--muted2);">— (empty)</span>';
@@ -780,38 +880,124 @@
       return SLC.escape(String(v));
     };
 
-    let tableRows = keys.map(k => {
+    const renderTableRows = () => keys.map(k => {
+      const isPhoneKey = ['Phone', 'Corporate Phone', 'Company Phone', 'Mobile Phone', 'Direct Phone'].includes(k);
+      const highlight = isPhoneKey && row.phone_enriched ? 'background:rgba(16,185,129,0.12);font-weight:700;color:var(--good);' : '';
       return `
-        <tr>
+        <tr style="${highlight}">
           <td style="font-weight:600;color:var(--text);width:260px;background:var(--panel2);">${SLC.escape(k)}</td>
-          <td style="word-break:break-word;color:var(--text);">${formatVal(rawData[k])}</td>
+          <td style="word-break:break-word;color:var(--text);">${formatVal(rawData[k] || (isPhoneKey ? row.phone : ''))}</td>
         </tr>
       `;
     }).join('');
 
     const bodyHtml = `
-      <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <div>
-          <h4 style="margin:0;font-size:16px;font-weight:700;">${SLC.escape(row.contact_name || 'Contact')} — ${SLC.escape(row.company_name || 'Company')}</h4>
-          <p style="margin:2px 0 0;font-size:12px;color:var(--muted);">All ${keys.length} Apollo CSV original attributes preserved</p>
+      <!-- On-Demand Google Maps & Live Search Action Card -->
+      <div id="inspectorEnrichCard" style="background:linear-gradient(135deg,rgba(16,185,129,0.1),rgba(5,150,105,0.06));border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">
+        <div style="flex:1;min-width:240px;">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:var(--text);">
+            <span>🗺️ Google Maps & Live Data Search</span>
+            ${row.phone_source ? `<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--good);font-weight:600;">Source: ${SLC.escape(row.phone_source)}</span>` : ''}
+          </div>
+          <div id="inspectorPhoneStatus" style="font-size:12.5px;color:var(--muted);margin-top:4px;">
+            ${row.phone ? `📞 Phone: <strong style="color:var(--good);">${SLC.escape(row.phone)}</strong>` : `<span style="color:var(--bad);">❌ Phone number missing in Apollo export</span> — Fetch real number from Google Maps`}
+          </div>
         </div>
-        <span class="badge" style="background:var(--accent-soft);color:var(--accent);font-size:12px;">${keys.length} Preserved Fields</span>
+        <div>
+          <button type="button" class="btn-primary btn-sm" id="btnFetchRowGoogleMaps" style="background:linear-gradient(135deg,#10b981,#059669);border-color:#10b981;color:#fff;font-weight:700;padding:7px 16px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(16,185,129,0.25);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span id="btnFetchRowGmapsLabel">Fetch from Google Maps</span>
+          </button>
+        </div>
       </div>
-      <div style="max-height:60vh;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
-        <table class="data" style="width:100%;font-size:12.5px;">
+
+      <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h4 style="margin:0;font-size:15.5px;font-weight:700;color:var(--text);">${SLC.escape(row.contact_name || 'Contact')} — ${SLC.escape(row.company_name || 'Company')}</h4>
+          <p style="margin:2px 0 0;font-size:12px;color:var(--muted);">Location: ${SLC.escape([row.city, row.state, row.country].filter(Boolean).join(', ') || 'N/A')}</p>
+        </div>
+        <span class="badge" style="background:var(--accent-soft);color:var(--accent);font-size:11.5px;">${keys.length} Preserved Fields</span>
+      </div>
+      <div style="max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table class="data" style="width:100%;font-size:12px;">
           <thead>
-            <tr><th>Apollo Column Name</th><th>Original Field Value</th></tr>
+            <tr><th>Apollo Column Name</th><th>Field Value</th></tr>
           </thead>
-          <tbody>${tableRows}</tbody>
+          <tbody id="inspectorTableTbody">${renderTableRows()}</tbody>
         </table>
       </div>
     `;
 
-    SLC.modal.open({
+    const m = SLC.modal.open({
       title: 'Apollo Record Inspector (' + keys.length + ' Fields)',
       size: 'lg',
       body: bodyHtml,
       footer: '<button class="btn-primary" data-close>Close Inspector</button>',
+    });
+
+    // Attach Google Maps On-Demand Enrichment Listener
+    m.el.querySelector('#btnFetchRowGoogleMaps')?.addEventListener('click', async () => {
+      const btn = m.el.querySelector('#btnFetchRowGoogleMaps');
+      const label = m.el.querySelector('#btnFetchRowGmapsLabel');
+      if (btn) btn.disabled = true;
+      if (label) label.textContent = 'Searching Google Maps...';
+
+      try {
+        const res = await api.post('leads/import/enrich-row', {
+          batch_token: currentPreviewData?.batch_token,
+          row_index: row.row_index,
+          row_info: {
+            company_name: row.company_name,
+            contact_name: row.contact_name,
+            city: row.city,
+            state: row.state,
+            country: row.country,
+            website: row.company_website || row.website,
+            job_title: row.job_title,
+          }
+        });
+
+        if (res && res.phone) {
+          row.phone = res.phone;
+          row.phone_source = res.phone_source || 'Google Maps';
+          row.phone_enriched = true;
+          if (res.address && !row.address) row.address = res.address;
+          if (row.raw_apollo_data) {
+            row.raw_apollo_data['Phone'] = res.phone;
+            row.raw_apollo_data['Corporate Phone'] = res.phone;
+            row.raw_apollo_data['Company Phone'] = res.phone;
+          }
+
+          // Update main preview table
+          updatePreviewTable();
+
+          // Update KPI grid stats if provided
+          if (res.stats) {
+            if ($('kpiFsPhone')) $('kpiFsPhone').textContent = res.stats.free_search_phone ?? 0;
+            if ($('kpiMissingPhone')) $('kpiMissingPhone').textContent = res.stats.still_missing_phone ?? 0;
+          }
+
+          // Update Modal UI
+          const statusEl = m.el.querySelector('#inspectorPhoneStatus');
+          if (statusEl) {
+            statusEl.innerHTML = `📞 Phone: <strong style="color:var(--good);font-size:13px;">${SLC.escape(res.phone)}</strong> <span style="font-size:11px;padding:1px 6px;border-radius:4px;background:rgba(16,185,129,0.15);color:var(--good);margin-left:6px;">⚡ Fetched via ${SLC.escape(res.phone_source || 'Google Maps')}</span>`;
+          }
+          const tbody = m.el.querySelector('#inspectorTableTbody');
+          if (tbody) tbody.innerHTML = renderTableRows();
+
+          if (label) label.textContent = '✓ Phone Fetched!';
+          if (btn) btn.style.background = '#059669';
+          SLC.toast('✅ Real phone number found on Google Maps: ' + res.phone, 'success');
+        } else {
+          SLC.toast(res.error || 'No public phone number found on Google Maps.', 'warn');
+          if (label) label.textContent = 'Fetch from Google Maps';
+          if (btn) btn.disabled = false;
+        }
+      } catch (err) {
+        SLC.toast(err.message || 'Google Maps lookup failed.', 'error');
+        if (label) label.textContent = 'Fetch from Google Maps';
+        if (btn) btn.disabled = false;
+      }
     });
   }
 
@@ -1000,6 +1186,39 @@
     $('lfSave')?.addEventListener('click', saveProspects);
     $('lfDownloadCsvBtn')?.addEventListener('click', downloadDiscoveryCsv);
     $('lfClearFilters')?.addEventListener('click', window.clearLeadFinder);
+
+    // WhatsApp Copy button for Discovery results
+    $('lfCopyWaBtn')?.addEventListener('click', () => {
+      const chosen = [];
+      document.querySelectorAll('.lf-check:checked').forEach(cb => {
+        const p = prospects[parseInt(cb.getAttribute('data-i'), 10)];
+        if (p) chosen.push(p);
+      });
+      if (!chosen.length) { SLC.toast('Select at least one prospect first.', 'warn'); return; }
+      const assignUserText = $('lfAssignUser')?.options[$('lfAssignUser')?.selectedIndex]?.text || 'Sales Team';
+      const cleanName = assignUserText.replace(/\s*\([^)]*\)/g, '').trim();
+      const waItems = chosen.map(p => ({
+        name: p.name,
+        company_name: p.name || p.company_name,
+        phone: p.phone || (p.contacts && p.contacts[0] && p.contacts[0].phone),
+        email: p.email || p.contact_email || (p.contacts && p.contacts[0] && p.contacts[0].email),
+        designation: p.contact_designation || (p.contacts && p.contacts[0] && p.contacts[0].designation),
+        location: p.address || p.city,
+        industry: p.industry,
+      }));
+      if (typeof SLC.openWhatsAppShareModal === 'function') {
+        SLC.openWhatsAppShareModal({
+          assignedToName: cleanName,
+          items: waItems,
+          typeLabel: 'AI Discovered Leads',
+        });
+      }
+    });
+
+    // Selection buttons
+    document.querySelectorAll('[data-sel]').forEach(btn => {
+      btn.addEventListener('click', () => selectProspects(btn.getAttribute('data-sel')));
+    });
 
     // Quick factory zone chips
     document.querySelectorAll('.btn-zone-chip').forEach(btn => {
@@ -1808,6 +2027,25 @@
       });
       renderFsTableRows();
 
+      // WhatsApp share modal for assigned free-search leads
+      if (assignedTo && chosen.length && typeof SLC.openWhatsAppShareModal === 'function') {
+        const cleanName = assignUserText.replace(/\s*\([^)]*\)/g, '').trim();
+        const waItems = chosen.map(item => ({
+          name: item.lead.company_name,
+          company_name: item.lead.company_name,
+          phone: item.lead.direct_phone || item.lead.company_phone,
+          email: item.lead.direct_email || item.lead.email,
+          designation: item.lead.designation,
+          location: item.lead.location || item.lead.address,
+          industry: item.lead.keyword,
+        }));
+        SLC.openWhatsAppShareModal({
+          assignedToName: cleanName,
+          items: waItems,
+          typeLabel: 'Free Search Leads',
+        });
+      }
+
       if (SLC.refreshSidebarCounters) SLC.refreshSidebarCounters();
     } catch (e) {
       SLC.toast('Failed to save to CRM: ' + e.message, 'error');
@@ -1867,5 +2105,35 @@
 
     // Save to CRM button
     $('fsSaveToCrmBtn')?.addEventListener('click', saveFreeSearchLeadsToCRM);
+
+    // WhatsApp Copy button for Free Search results
+    $('fsCopyWaBtn')?.addEventListener('click', () => {
+      const chosen = [];
+      fsCurrentLeads.forEach((lead, idx) => {
+        if (!lead._inCrm && lead._selected !== false) {
+          chosen.push(lead);
+        }
+      });
+      if (!chosen.length) { SLC.toast('Select at least one lead first.', 'warn'); return; }
+      const assignUserText = $('fsAssignUser')?.options[$('fsAssignUser')?.selectedIndex]?.text || 'Sales Team';
+      const cleanName = assignUserText.replace(/\s*\([^)]*\)/g, '').trim();
+      const waItems = chosen.map(l => ({
+        name: l.company_name,
+        company_name: l.company_name,
+        phone: l.direct_phone || l.company_phone,
+        email: l.direct_email || l.email,
+        designation: l.designation,
+        location: l.location || l.address,
+        industry: l.keyword,
+      }));
+      if (typeof SLC.openWhatsAppShareModal === 'function') {
+        SLC.openWhatsAppShareModal({
+          assignedToName: cleanName,
+          items: waItems,
+          typeLabel: 'Free Search Leads',
+        });
+      }
+    });
   }
 })();
+

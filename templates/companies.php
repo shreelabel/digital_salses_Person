@@ -5,8 +5,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="companySearch" placeholder="Search companies, industry, city…">
     </div>
-    <select class="filter" id="companyIndustry"><option value="">All industries</option></select>
-    <select class="filter" id="companyPriority"><option value="">All priority</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <select class="filter" id="companyIndustry"><option value="">All Industries</option></select>
+    <select class="filter" id="companyLocation"><option value="">All Locations</option></select>
+    <select class="filter" id="companyPriority"><option value="">All Priority</option><option>High</option><option>Medium</option><option>Low</option></select>
     <select class="filter" id="companyAssignedUser"><option value="">All Assignees</option></select>
     <button class="btn-primary" id="addCompanyBtn" style="margin-left:auto">+ Add Company</button>
   </div>
@@ -18,6 +19,7 @@
         <option value="">Assign to...</option>
       </select>
       <button class="btn-secondary btn-sm" id="companyBulkAssignBtn">👤 Assign</button>
+      <button class="btn-secondary btn-sm" id="companyBulkWaBtn" style="background:rgba(37,211,102,0.12);border-color:rgba(37,211,102,0.4);color:#25D366;font-weight:600;">💬 Copy WhatsApp Msg</button>
       <button class="btn-danger btn-sm" id="companyBulkDeleteBtn">🗑️ Delete Selected</button>
       <button class="btn-ghost btn-sm" id="companyBulkClearBtn">Cancel</button>
     </div>

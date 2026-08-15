@@ -288,11 +288,118 @@
     });
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', SLC.refreshSidebarCounters);
-  } else {
-    SLC.refreshSidebarCounters();
-  }
+  // ---- Universal WhatsApp Assignment Message Generator & Modal ----
+  SLC.generateWhatsAppText = function (opts) {
+    opts = opts || {};
+    const assignedTo = opts.assignedToName || 'Sales Executive';
+    const adminName = opts.adminName || (SLC.user && SLC.user.name) || 'Admin';
+    const items = opts.items || [];
+    const typeLabel = opts.typeLabel || 'Companies';
+    const now = new Date();
+    const dateStr = SLC.formatDate(now.toISOString(), true);
+
+    // Compute CRM URL
+    const baseUrl = (window.SLC && SLC.base !== undefined) ? (window.location.origin + SLC.base) : window.location.origin;
+    let targetPath = '/companies';
+    const tLower = (typeLabel || '').toLowerCase();
+    if (tLower.includes('contact')) targetPath = '/contacts';
+    else if (tLower.includes('lead')) targetPath = '/leads';
+    else if (tLower.includes('discover') || tLower.includes('free search')) targetPath = '/ai-lead-finder';
+    const crmUrl = opts.crmUrl || (baseUrl.replace(/\/$/, '') + targetPath);
+
+    let text = `📢 *NEW ASSIGNMENT NOTICE*\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `👤 *Assigned To:* ${assignedTo}\n`;
+    text += `💼 *Assigned By (Admin):* ${adminName}\n`;
+    text += `📅 *Date:* ${dateStr}\n`;
+    text += `🏢 *Total ${typeLabel}:* ${items.length}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    text += `📋 *Assigned List:*\n`;
+    items.forEach((item, idx) => {
+      const num = idx + 1;
+      const compName = item.company_name || item.name || item.title || 'Company Record';
+      const location = item.location || [item.city, item.state, item.country].filter(Boolean).join(', ') || item.address || '—';
+      const ind = item.industry ? ` [${item.industry}]` : '';
+
+      text += `${num}. *${compName}*${ind} — 📍 ${location}\n`;
+    });
+
+    text += `\n━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🔗 *CRM Access Link:*\n${crmUrl}\n\n`;
+    text += `⚡ *Note:* Please log in to the CRM to view full contact numbers, verified emails, decision makers, and manage your follow-ups.\n`;
+    return text.trim();
+  };
+
+  SLC.openWhatsAppShareModal = function (opts) {
+    opts = opts || {};
+    const text = SLC.generateWhatsAppText(opts);
+    const assignedTo = opts.assignedToName || 'Sales Executive';
+    const totalCount = (opts.items || []).length;
+    const typeLabel = opts.typeLabel || 'Records';
+
+    const bodyHtml = `
+      <div style="margin-bottom:14px;padding:12px 14px;background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.25);border-radius:10px;display:flex;align-items:center;gap:12px;">
+        <div style="font-size:24px;">💬</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;color:var(--text);font-size:13.5px;">WhatsApp Assignment Message Ready for ${SLC.escape(assignedTo)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+            ${totalCount} ${SLC.escape(typeLabel)} formatted for WhatsApp. Click <strong>Copy WhatsApp Message</strong> below, then paste it directly to the recipient in WhatsApp.
+          </div>
+        </div>
+      </div>
+
+      <div style="position:relative;">
+        <label style="display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Ready-to-Paste WhatsApp Message:</label>
+        <textarea id="slcWaPreviewText" readonly style="width:100%;height:220px;font-family:monospace;font-size:12px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;resize:vertical;white-space:pre-wrap;line-height:1.45;">${SLC.escape(text)}</textarea>
+      </div>
+    `;
+
+    const footerHtml = `
+      <button class="btn btn-secondary" data-close>Close</button>
+      <button class="btn btn-primary" id="slcCopyWaBtn" style="background:linear-gradient(135deg, #25D366, #128C7E);border-color:#25D366;color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(37,211,102,0.35);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="slcCopyWaBtnLabel">📋 Copy WhatsApp Message</span>
+      </button>
+    `;
+
+    if (SLC.modal && typeof SLC.modal.open === 'function') {
+      SLC.modal.open({
+        title: `💬 WhatsApp Assignment Share (${totalCount} ${typeLabel})`,
+        size: 'lg',
+        body: bodyHtml,
+        footer: footerHtml,
+      });
+    }
+
+    setTimeout(() => {
+      const copyBtn = document.getElementById('slcCopyWaBtn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          const textarea = document.getElementById('slcWaPreviewText');
+          const content = textarea ? textarea.value : text;
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(content);
+            } else if (textarea) {
+              textarea.select();
+              document.execCommand('copy');
+            }
+            const label = document.getElementById('slcCopyWaBtnLabel');
+            if (label) label.textContent = '✓ Copied to Clipboard!';
+            copyBtn.style.background = '#059669';
+            SLC.toast('✅ WhatsApp message copied to clipboard! You can now paste it into WhatsApp.', 'success');
+            setTimeout(() => {
+              if (label) label.textContent = '📋 Copy WhatsApp Message';
+              copyBtn.style.background = 'linear-gradient(135deg, #25D366, #128C7E)';
+            }, 3000);
+          } catch (err) {
+            SLC.toast('Failed to auto-copy. Please select and copy the text manually.', 'warn');
+          }
+        });
+      }
+    }, 50);
+  };
 
   window.SLC = SLC;
 })();

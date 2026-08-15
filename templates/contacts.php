@@ -5,7 +5,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="contactSearch" placeholder="Search contacts, designation, email…">
     </div>
-    <select class="filter" id="contactDm"><option value="">All contacts</option><option value="1">Decision makers</option></select>
+    <select class="filter" id="contactDesignation"><option value="">All Designations</option></select>
+    <select class="filter" id="contactLocation"><option value="">All Locations</option></select>
+    <select class="filter" id="contactDm"><option value="">All Contacts</option><option value="1">Decision Makers</option></select>
     <select class="filter" id="contactAssignedUser"><option value="">All Assignees</option></select>
     <button class="btn-primary" id="addContactBtn" style="margin-left:auto">+ Add Contact</button>
   </div>
@@ -16,6 +18,7 @@
         <option value="">Assign to...</option>
       </select>
       <button class="btn-secondary btn-sm" id="contactBulkAssignBtn">👤 Assign</button>
+      <button class="btn-secondary btn-sm" id="contactBulkWaBtn" style="background:rgba(37,211,102,0.12);border-color:rgba(37,211,102,0.4);color:#25D366;font-weight:600;">💬 Copy WhatsApp Msg</button>
       <button class="btn-danger btn-sm" id="contactBulkDeleteBtn">🗑️ Delete Selected</button>
       <button class="btn-ghost btn-sm" id="contactBulkClearBtn">Cancel</button>
     </div>

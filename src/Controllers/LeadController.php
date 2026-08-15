@@ -26,6 +26,11 @@ class LeadController extends Controller
         Response::success($result);
     }
 
+    public function filterOptions(): void
+    {
+        Response::success($this->leads->getFilterOptions());
+    }
+
     public function store(): void
     {
         $data = $this->input();

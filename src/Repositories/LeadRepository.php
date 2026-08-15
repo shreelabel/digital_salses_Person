@@ -59,11 +59,56 @@ class LeadRepository extends BaseRepository
                 $params['f_' . $f] = $filters[$f];
             }
         }
+        if (!empty($filters['location'])) {
+            $loc = trim((string) $filters['location']);
+            $where .= " AND ({$prefix}.location = :f_loc1 OR {$prefix}.location LIKE :f_loc2 OR c.city LIKE :f_loc3 OR c.state LIKE :f_loc4 OR c.country LIKE :f_loc5)";
+            $params['f_loc1'] = $loc;
+            $params['f_loc2'] = '%' . $loc . '%';
+            $params['f_loc3'] = '%' . $loc . '%';
+            $params['f_loc4'] = '%' . $loc . '%';
+            $params['f_loc5'] = '%' . $loc . '%';
+        }
         if (!empty($filters['company_id'])) {
             $where .= " AND {$prefix}.company_id = :cid";
             $params['cid'] = (int) $filters['company_id'];
         }
         return [$where, $params];
+    }
+
+    /** Return dynamic distinct filter options currently in the database */
+    public function getFilterOptions(): array
+    {
+        $scopedUserId = \SLC\Core\Auth::scopedUserId();
+        $scopeExtra = '';
+        $params = [];
+        if ($scopedUserId !== null) {
+            $scopeExtra = " AND l.assigned_to = :uid";
+            $params['uid'] = $scopedUserId;
+        }
+
+        $statuses = Database::fetchAll(
+            "SELECT DISTINCT l.status FROM slc_leads l WHERE l.deleted_at IS NULL AND l.status IS NOT NULL AND TRIM(l.status) != '' {$scopeExtra} ORDER BY l.status ASC",
+            $params
+        );
+        $industries = Database::fetchAll(
+            "SELECT DISTINCT l.industry FROM slc_leads l WHERE l.deleted_at IS NULL AND l.industry IS NOT NULL AND TRIM(l.industry) != '' {$scopeExtra} ORDER BY l.industry ASC",
+            $params
+        );
+        $locations = Database::fetchAll(
+            "SELECT DISTINCT l.location FROM slc_leads l WHERE l.deleted_at IS NULL AND l.location IS NOT NULL AND TRIM(l.location) != '' {$scopeExtra} ORDER BY l.location ASC",
+            $params
+        );
+        $sources = Database::fetchAll(
+            "SELECT DISTINCT l.source FROM slc_leads l WHERE l.deleted_at IS NULL AND l.source IS NOT NULL AND TRIM(l.source) != '' {$scopeExtra} ORDER BY l.source ASC",
+            $params
+        );
+
+        return [
+            'statuses' => array_values(array_filter(array_map(fn($r) => trim((string)$r['status']), $statuses))),
+            'industries' => array_values(array_filter(array_map(fn($r) => trim((string)$r['industry']), $industries))),
+            'locations' => array_values(array_filter(array_map(fn($r) => trim((string)$r['location']), $locations))),
+            'sources' => array_values(array_filter(array_map(fn($r) => trim((string)$r['source']), $sources))),
+        ];
     }
 
     /** Joined list (company name + contact name + score + assigned user) for tables. */

@@ -49,6 +49,27 @@ class ImportController extends Controller
     }
 
     /**
+     * POST /api/leads/import/enrich-row
+     * On-demand lookup of real phone & address from Google Maps / Search.
+     */
+    public function enrichRow(): void
+    {
+        \SLC\Core\Auth::requirePermission('ai_lead_finder.use');
+        $data = $this->input();
+        $batchToken = trim((string)($data['batch_token'] ?? ''));
+        $rowIndex = (int)($data['row_index'] ?? 0);
+        $rowInfo = $data['row_info'] ?? $data;
+
+        $res = $this->importer->enrichSingleRow($batchToken, $rowIndex, $rowInfo, $this->userId());
+        if (!$res['ok']) {
+            Response::error($res['error'] ?? 'Could not find contact details.', 404);
+            return;
+        }
+
+        Response::success($res);
+    }
+
+    /**
      * POST /api/leads/import/confirm
      * Takes batch_token and commits the staged records into the CRM database.
      */

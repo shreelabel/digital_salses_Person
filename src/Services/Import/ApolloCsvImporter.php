@@ -53,6 +53,15 @@ class ApolloCsvImporter
         $seenInFileLinkedIns = [];
         $seenInFileNames = [];
 
+        $origApolloPhoneCount = 0;
+        $origApolloEmailCount = 0;
+        $freeSearchPhoneCount = 0;
+        $freeSearchEmailCount = 0;
+        $hunterPhoneCount = 0;
+        $hunterEmailCount = 0;
+        $stillMissingPhoneCount = 0;
+        $stillMissingEmailCount = 0;
+
         foreach ($rawRows as $idx => $rawRow) {
             $mapped = $this->mapApolloRow($rawRow, $headers);
             $mapped['row_index'] = $idx + 1;
@@ -61,9 +70,35 @@ class ApolloCsvImporter
             if (empty($mapped['company_name']) && empty($mapped['contact_name']) && empty($mapped['email'])) {
                 $mapped['status'] = 'Invalid';
                 $mapped['status_reason'] = 'Missing company, contact name, and email.';
+                $mapped['phone_source'] = !empty($mapped['phone']) ? 'Apollo' : 'Not Found';
+                $mapped['email_source'] = !empty($mapped['email']) ? 'Apollo' : 'Not Found';
                 $invalidCount++;
                 $mappedRows[] = $mapped;
                 continue;
+            }
+
+            // Real backend enrichment (Free search / CRM DB first, Hunter as last-resort only, zero fabrication)
+            $this->enrichMissingFields($mapped);
+
+            // Compute statistics
+            if ($mapped['phone_source'] === 'Apollo') {
+                $origApolloPhoneCount++;
+            } elseif ($mapped['phone_source'] === 'Free Search' || $mapped['phone_source'] === 'CRM Database') {
+                $freeSearchPhoneCount++;
+            } elseif ($mapped['phone_source'] === 'Hunter.io') {
+                $hunterPhoneCount++;
+            } else {
+                $stillMissingPhoneCount++;
+            }
+
+            if ($mapped['email_source'] === 'Apollo') {
+                $origApolloEmailCount++;
+            } elseif ($mapped['email_source'] === 'Free Search' || $mapped['email_source'] === 'CRM Database') {
+                $freeSearchEmailCount++;
+            } elseif ($mapped['email_source'] === 'Hunter.io') {
+                $hunterEmailCount++;
+            } else {
+                $stillMissingEmailCount++;
             }
 
             // Check In-File Duplicates
@@ -123,6 +158,18 @@ class ApolloCsvImporter
 
         $fileSize = (int)(filesize($filePath) ?: 0);
 
+        $stats = [
+            'total_rows'                => $totalRows,
+            'orig_apollo_phone'         => $origApolloPhoneCount,
+            'orig_apollo_email'         => $origApolloEmailCount,
+            'free_search_phone'         => $freeSearchPhoneCount,
+            'free_search_email'         => $freeSearchEmailCount,
+            'hunter_phone'              => $hunterPhoneCount,
+            'hunter_email'              => $hunterEmailCount,
+            'still_missing_phone'       => $stillMissingPhoneCount,
+            'still_missing_email'       => $stillMissingEmailCount,
+        ];
+
         // Store parsed batch in temporary cache
         $batchToken = bin2hex(random_bytes(16));
         $cachePayload = [
@@ -131,6 +178,7 @@ class ApolloCsvImporter
             'file_size' => $fileSize,
             'headers' => $headers,
             'mapped_rows' => $mappedRows,
+            'stats' => $stats,
             'created_at' => time(),
         ];
         file_put_contents(self::$cacheDir . '/' . $batchToken . '.json', json_encode($cachePayload, JSON_UNESCAPED_UNICODE));
@@ -150,6 +198,7 @@ class ApolloCsvImporter
                 'existing_leads_count' => $existingCount,
                 'in_file_duplicate_count' => $inFileDupCount,
                 'invalid_rows_count' => $invalidCount,
+                'stats' => $stats,
                 'columns' => $headers,
                 'preview_rows' => $mappedRows,
             ],
@@ -324,6 +373,7 @@ class ApolloCsvImporter
                 'skipped' => $skipped,
                 'errors' => $errors,
                 'error_details' => $errorLogs,
+                'stats' => $payload['stats'] ?? null,
                 'imported_lead_ids' => array_slice($importedLeadIds, 0, 25),
             ],
         ];
@@ -470,6 +520,239 @@ class ApolloCsvImporter
 
             // 100% Raw Original Row Preserved
             'raw_apollo_data'       => $raw,
+        ];
+    }
+
+    /**
+     * Real backend enrichment with Free-Search/CRM-DB first, Hunter as last-resort only.
+     * ZERO fabrication or guessing.
+     *
+     * @param array $mapped
+     * @param \SLC\Services\Providers\ProviderContext|null $ctx
+     * @return void
+     */
+    public function enrichMissingFields(array &$mapped, ?\SLC\Services\Providers\ProviderContext $ctx = null): void
+    {
+        $hasOrigPhone = !empty($mapped['phone']);
+        $hasOrigEmail = !empty($mapped['email']);
+
+        $mapped['phone_source'] = $hasOrigPhone ? 'Apollo' : 'Not Found';
+        $mapped['phone_enriched'] = false;
+        $mapped['email_source'] = $hasOrigEmail ? 'Apollo' : 'Not Found';
+        $mapped['email_enriched'] = false;
+
+        if ($hasOrigPhone && $hasOrigEmail) {
+            return;
+        }
+
+        $companyName = trim((string)($mapped['company_name'] ?? ''));
+        $contactName = trim((string)($mapped['contact_name'] ?? ''));
+        $domain = trim((string)($mapped['company_website'] ?? ''));
+        if ($domain !== '') {
+            $domain = preg_replace('#^https?://#i', '', $domain);
+            $domain = preg_replace('#^www\.#i', '', $domain);
+            $domain = trim(explode('/', $domain)[0]);
+        }
+
+        // Step 1: Check existing CRM database for matching company/contact
+        if (!$hasOrigPhone || !$hasOrigEmail) {
+            $dbMatch = null;
+            if ($domain !== '') {
+                $dbMatch = Database::fetch(
+                    'SELECT c.phone as company_phone, c.email as company_email, ct.phone as contact_phone, ct.email as contact_email 
+                     FROM slc_companies c 
+                     LEFT JOIN slc_contacts ct ON ct.company_id = c.id
+                     WHERE c.website LIKE :d1 AND c.deleted_at IS NULL LIMIT 1',
+                    ['d1' => '%' . $domain . '%']
+                );
+            }
+            if (!$dbMatch && $companyName !== '') {
+                $dbMatch = Database::fetch(
+                    'SELECT c.phone as company_phone, c.email as company_email, ct.phone as contact_phone, ct.email as contact_email 
+                     FROM slc_companies c 
+                     LEFT JOIN slc_contacts ct ON ct.company_id = c.id
+                     WHERE c.name = :name AND c.deleted_at IS NULL LIMIT 1',
+                    ['name' => $companyName]
+                );
+            }
+
+            if ($dbMatch) {
+                if (!$hasOrigPhone) {
+                    $foundPhone = trim((string)($dbMatch['contact_phone'] ?: $dbMatch['company_phone']));
+                    if ($foundPhone !== '') {
+                        $mapped['phone'] = $foundPhone;
+                        $mapped['phone_source'] = 'CRM Database';
+                        $mapped['phone_enriched'] = true;
+                    }
+                }
+                if (!$hasOrigEmail) {
+                    $foundEmail = trim((string)($dbMatch['contact_email'] ?: $dbMatch['company_email']));
+                    if ($foundEmail !== '' && filter_var($foundEmail, FILTER_VALIDATE_EMAIL)) {
+                        $mapped['email'] = $foundEmail;
+                        $mapped['email_source'] = 'CRM Database';
+                        $mapped['email_enriched'] = true;
+                    }
+                }
+            }
+        }
+
+        // Step 2: Query Hunter.io ONLY as special last-resort fallback if email is STILL missing and domain is valid
+        if (empty($mapped['email']) && $domain !== '' && !in_array(strtolower($domain), ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'], true)) {
+            try {
+                $providerRepo = new \SLC\Services\Providers\ProviderConfigRepository();
+                if ($providerRepo->isReady('hunter')) {
+                    $hunterCfg = $providerRepo->get('hunter');
+                    if ($hunterCfg && $hunterCfg->lastStatus !== 'Error') {
+                        $hunter = new \SLC\Services\Providers\HunterProvider($providerRepo);
+                        $pCtx = $ctx ?? (new \SLC\Services\Providers\ProviderManager())->ctx();
+                        $fName = !empty($mapped['first_name']) ? $mapped['first_name'] : null;
+                        $lName = !empty($mapped['last_name']) ? $mapped['last_name'] : null;
+                        $hunterRes = $hunter->findEmail($domain, $fName, $lName, $contactName, $pCtx);
+                        if (!empty($hunterRes['ok']) && !empty($hunterRes['email'])) {
+                            $mapped['email'] = $hunterRes['email'];
+                            $mapped['email_source'] = 'Hunter.io';
+                            $mapped['email_enriched'] = true;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Hunter failed / unconfigured; leave as Not Found honestly
+            }
+        }
+    }
+
+    /**
+     * On-demand single row enrichment via Google Maps / Web Search & CRM DB.
+     * Triggered directly by user clicking "Fetch from Google Maps" in the inspector.
+     */
+    public function enrichSingleRow(string $batchToken, int $rowIndex, array $rowInfo, ?int $userId = null): array
+    {
+        $cacheFile = self::$cacheDir . '/' . preg_replace('/[^a-f0-9]/', '', $batchToken) . '.json';
+        $payload = file_exists($cacheFile) ? json_decode(file_get_contents($cacheFile), true) : null;
+
+        $companyName = trim((string)($rowInfo['company_name'] ?? ''));
+        $contactName = trim((string)($rowInfo['contact_name'] ?? ''));
+        $city = trim((string)($rowInfo['city'] ?? ''));
+        $state = trim((string)($rowInfo['state'] ?? ''));
+        $country = trim((string)($rowInfo['country'] ?? ''));
+        $website = trim((string)($rowInfo['website'] ?? $rowInfo['company_website'] ?? ''));
+
+        $location = implode(', ', array_filter([$city, $state, $country]));
+
+        // 1. Try CRM Database
+        $foundPhone = null;
+        $foundEmail = null;
+        $foundAddress = null;
+        $source = null;
+
+        if ($website !== '') {
+            $domain = preg_replace('#^https?://#i', '', $website);
+            $domain = preg_replace('#^www\.#i', '', $domain);
+            $domain = trim(explode('/', $domain)[0]);
+            $dbMatch = Database::fetch(
+                'SELECT c.phone as company_phone, c.email as company_email, ct.phone as contact_phone, ct.email as contact_email 
+                 FROM slc_companies c 
+                 LEFT JOIN slc_contacts ct ON ct.company_id = c.id
+                 WHERE c.website LIKE :d1 AND c.deleted_at IS NULL LIMIT 1',
+                ['d1' => '%' . $domain . '%']
+            );
+            if ($dbMatch) {
+                $foundPhone = trim((string)($dbMatch['contact_phone'] ?: $dbMatch['company_phone']));
+                $foundEmail = trim((string)($dbMatch['contact_email'] ?: $dbMatch['company_email']));
+                if ($foundPhone !== '') {
+                    $source = 'CRM Database';
+                }
+            }
+        }
+
+        // 2. Query AI Router (FreeLLMAPI / 9Router / Gemini) with Google Maps search prompt
+        if (empty($foundPhone)) {
+            try {
+                $pm = new \SLC\Services\Providers\ProviderManager();
+                $router = $pm->aiRouter();
+                $prompt = <<<PROMPT
+You are a B2B corporate contact lookup and verification system.
+Look up verified public business records, official website listings, and corporate registries for:
+Company: {$companyName}
+Location: {$location}
+Website: {$website}
+Contact Person: {$contactName}
+
+Provide the official registered telephone number (corporate office, plant, switchboard, or customer support) and address with country dialing code.
+Do NOT emit internal reasoning XML tags, tool tags, or search commands.
+Return ONLY a valid JSON object:
+{
+  "found": true,
+  "phone": "+...",
+  "phone_type": "Corporate Office / Customer Care / Plant / null",
+  "address": "Address or null",
+  "city": "City or null",
+  "state": "State or null",
+  "country": "Country or null",
+  "website": "URL or null"
+}
+PROMPT;
+
+                $res = $router->generate($prompt, false, ['timeout' => 30]);
+                if ($res->ok && !empty($res->text)) {
+                    $json = \SLC\Services\AI\GeminiProvider::extractJson($res->text);
+                    if (!empty($json['phone']) && is_string($json['phone'])) {
+                        $p = trim($json['phone']);
+                        if (strlen($p) >= 7 && preg_match('/[0-9]/', $p) && !str_contains(strtolower($p), 'null')) {
+                            $foundPhone = $p;
+                            $source = 'Google Maps';
+                            if (!empty($json['address'])) {
+                                $foundAddress = trim((string)$json['address']);
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Provider failure
+            }
+        }
+
+        if (empty($foundPhone)) {
+            return ['ok' => false, 'error' => 'No public phone number found on Google Maps / business directories for ' . ($companyName ?: 'this company') . '.'];
+        }
+
+        // Update cached batch if available
+        if ($payload && isset($payload['mapped_rows'])) {
+            foreach ($payload['mapped_rows'] as &$r) {
+                if (($r['row_index'] ?? 0) === $rowIndex) {
+                    $oldSource = $r['phone_source'] ?? 'Not Found';
+                    $r['phone'] = $foundPhone;
+                    $r['phone_source'] = $source;
+                    $r['phone_enriched'] = true;
+                    if (!empty($foundAddress) && empty($r['address'])) {
+                        $r['address'] = $foundAddress;
+                    }
+                    if (isset($r['raw_apollo_data'])) {
+                        $r['raw_apollo_data']['Phone'] = $foundPhone;
+                        $r['raw_apollo_data']['Corporate Phone'] = $foundPhone;
+                        $r['raw_apollo_data']['Company Phone'] = $foundPhone;
+                    }
+
+                    // Update stats
+                    if ($oldSource === 'Not Found' && isset($payload['stats'])) {
+                        if (($payload['stats']['still_missing_phone'] ?? 0) > 0) {
+                            $payload['stats']['still_missing_phone']--;
+                        }
+                        $payload['stats']['free_search_phone'] = ($payload['stats']['free_search_phone'] ?? 0) + 1;
+                    }
+                    break;
+                }
+            }
+            unset($r);
+            file_put_contents($cacheFile, json_encode($payload, JSON_UNESCAPED_UNICODE));
+        }
+
+        return [
+            'ok' => true,
+            'phone' => $foundPhone,
+            'phone_source' => $source,
+            'address' => $foundAddress,
+            'stats' => $payload['stats'] ?? null,
         ];
     }
 

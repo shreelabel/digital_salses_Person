@@ -21,6 +21,7 @@ return function (\SLC\Core\Router $r): void {
 
     // ---------- COMPANIES ----------
     $r->add('GET',    'companies', [\SLC\Controllers\CompanyController::class, 'index']);
+    $r->add('GET',    'companies/filter-options', [\SLC\Controllers\CompanyController::class, 'filterOptions']);
     $r->add('POST',   'companies', [\SLC\Controllers\CompanyController::class, 'store']);
     $r->add('POST',   'companies/bulk-delete', [\SLC\Controllers\CompanyController::class, 'bulkDestroy']);
     $r->add('POST',   'companies/bulk-assign', [\SLC\Controllers\CompanyController::class, 'bulkAssign']);
@@ -31,6 +32,7 @@ return function (\SLC\Core\Router $r): void {
 
     // ---------- CONTACTS ----------
     $r->add('GET',    'contacts', [\SLC\Controllers\ContactController::class, 'index']);
+    $r->add('GET',    'contacts/filter-options', [\SLC\Controllers\ContactController::class, 'filterOptions']);
     $r->add('POST',   'contacts', [\SLC\Controllers\ContactController::class, 'store']);
     $r->add('POST',   'contacts/bulk-delete', [\SLC\Controllers\ContactController::class, 'bulkDestroy']);
     $r->add('POST',   'contacts/bulk-assign', [\SLC\Controllers\ContactController::class, 'bulkAssign']);
@@ -40,10 +42,12 @@ return function (\SLC\Core\Router $r): void {
 
     // ---------- LEADS & IMPORTS ----------
     $r->add('GET',    'leads', [\SLC\Controllers\LeadController::class, 'index']);
+    $r->add('GET',    'leads/filter-options', [\SLC\Controllers\LeadController::class, 'filterOptions']);
     $r->add('POST',   'leads', [\SLC\Controllers\LeadController::class, 'store']);
     $r->add('POST',   'leads/bulk-delete', [\SLC\Controllers\LeadController::class, 'bulkDestroy']);
     $r->add('POST',   'leads/bulk-assign', [\SLC\Controllers\LeadController::class, 'bulkAssign']);
     $r->add('POST',   'leads/import/preview', [\SLC\Controllers\ImportController::class, 'preview']);
+    $r->add('POST',   'leads/import/enrich-row', [\SLC\Controllers\ImportController::class, 'enrichRow']);
     $r->add('POST',   'leads/import/confirm', [\SLC\Controllers\ImportController::class, 'confirm']);
     $r->add('GET',    'leads/imports', [\SLC\Controllers\ImportController::class, 'history']);
     $r->add('GET',    'leads/imports/{id}/export-csv', [\SLC\Controllers\ImportController::class, 'exportBatchCsv']);

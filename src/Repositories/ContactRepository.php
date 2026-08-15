@@ -57,7 +57,67 @@ class ContactRepository extends BaseRepository
             $where .= " AND {$prefix}.is_decision_maker = :dm";
             $params['dm'] = (int) $filters['is_decision_maker'];
         }
+        if (!empty($filters['designation'])) {
+            $where .= " AND {$prefix}.designation = :f_desig";
+            $params['f_desig'] = $filters['designation'];
+        }
+        if (!empty($filters['department'])) {
+            $where .= " AND {$prefix}.department = :f_dept";
+            $params['f_dept'] = $filters['department'];
+        }
+        if (!empty($filters['location'])) {
+            $loc = trim((string) $filters['location']);
+            $where .= " AND (c.city = :f_loc1 OR c.state = :f_loc2 OR c.country = :f_loc3 OR c.city LIKE :f_loc4 OR c.state LIKE :f_loc5 OR c.country LIKE :f_loc6)";
+            $params['f_loc1'] = $loc;
+            $params['f_loc2'] = $loc;
+            $params['f_loc3'] = $loc;
+            $params['f_loc4'] = '%' . $loc . '%';
+            $params['f_loc5'] = '%' . $loc . '%';
+            $params['f_loc6'] = '%' . $loc . '%';
+        }
         return [$where, $params];
+    }
+
+    /** Return dynamic distinct filter options currently in the database */
+    public function getFilterOptions(): array
+    {
+        $scopedUserId = \SLC\Core\Auth::scopedUserId();
+        $scopeExtra = '';
+        $params = [];
+        if ($scopedUserId !== null) {
+            $scopeExtra = " AND ct.assigned_to = :uid";
+            $params['uid'] = $scopedUserId;
+        }
+
+        $designations = Database::fetchAll(
+            "SELECT DISTINCT ct.designation FROM slc_contacts ct WHERE ct.deleted_at IS NULL AND ct.designation IS NOT NULL AND TRIM(ct.designation) != '' {$scopeExtra} ORDER BY ct.designation ASC",
+            $params
+        );
+        $departments = Database::fetchAll(
+            "SELECT DISTINCT ct.department FROM slc_contacts ct WHERE ct.deleted_at IS NULL AND ct.department IS NOT NULL AND TRIM(ct.department) != '' {$scopeExtra} ORDER BY ct.department ASC",
+            $params
+        );
+        $companyLocs = Database::fetchAll(
+            "SELECT DISTINCT c.city, c.state, c.country FROM slc_contacts ct LEFT JOIN slc_companies c ON c.id = ct.company_id WHERE ct.deleted_at IS NULL {$scopeExtra}",
+            $params
+        );
+
+        $locations = [];
+        foreach ($companyLocs as $r) {
+            foreach (['country', 'state', 'city'] as $k) {
+                $val = trim((string)($r[$k] ?? ''));
+                if ($val !== '' && !in_array($val, $locations, true)) {
+                    $locations[] = $val;
+                }
+            }
+        }
+        sort($locations, SORT_STRING | SORT_FLAG_CASE);
+
+        return [
+            'designations' => array_values(array_filter(array_map(fn($r) => trim((string)$r['designation']), $designations))),
+            'departments' => array_values(array_filter(array_map(fn($r) => trim((string)$r['department']), $departments))),
+            'locations' => $locations,
+        ];
     }
 
     public function paginate(array $filters = [], int $page = 1, int $perPage = 20, string $orderBy = 'id', string $dir = 'DESC'): array
@@ -70,7 +130,9 @@ class ContactRepository extends BaseRepository
 
         [$where, $params] = $this->buildWhere($filters);
         $total = (int) (Database::fetchColumn(
-            "SELECT COUNT(*) FROM slc_contacts ct WHERE {$this->scope()} {$where}",
+            "SELECT COUNT(*) FROM slc_contacts ct
+             LEFT JOIN slc_companies c ON c.id = ct.company_id
+             WHERE ct.deleted_at IS NULL {$where}",
             $params
         ) ?? 0);
         $offset = ($page - 1) * $perPage;

@@ -26,6 +26,11 @@ class CompanyController extends Controller
         Response::success($result);
     }
 
+    public function filterOptions(): void
+    {
+        Response::success($this->companies->getFilterOptions());
+    }
+
     public function store(): void
     {
         $data = $this->input();

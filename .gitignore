@@ -16,6 +16,7 @@ composer.phar
 scratch/
 *.zip
 *.tar.gz
+database/backup_*.sql
 shree_label_digital_sales_person_*/
 shree_label_backup_*.json
 
