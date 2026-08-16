@@ -139,6 +139,21 @@
         '</div>';
       }
 
+      function renderIntelCard(title, val, icon, accentColor) {
+        if (!val) return '';
+        const isMultiLine = String(val).includes('\n');
+        const content = isMultiLine 
+          ? '<div style="white-space:pre-line;line-height:1.65;color:var(--text);font-size:13px;">' + SLC.escape(String(val)) + '</div>'
+          : '<div style="line-height:1.65;color:var(--text);font-size:13px;">' + SLC.escape(String(val)) + '</div>';
+        
+        return '<div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;">' +
+          '<div style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;color:' + (accentColor || 'var(--accent2)') + ';margin-bottom:6px;">' +
+            '<span>' + (icon || '📌') + '</span> ' + SLC.escape(title) +
+          '</div>' +
+          content +
+        '</div>';
+      }
+
       const bodyEl = so.el.querySelector('.slideover-body');
       bodyEl.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
@@ -147,16 +162,19 @@
         '</div>' +
         (r.lead_category_reasoning ? '<div style="background:var(--panel2);border-left:3px solid var(--accent);padding:8px 12px;font-size:12px;border-radius:4px;margin-bottom:12px;"><strong>Qualification:</strong> ' + SLC.escape(r.lead_category_reasoning) + '</div>' : '') +
         insightsHtml +
-        (r.recommended_service ? '<div class="detail-row"><span class="k">Recommended Pitch</span><span class="v" style="font-weight:700;color:var(--accent2);">' + SLC.escape(r.recommended_service) + '</span></div>' : '') +
-        (r.pitch_strategy ? SLC.ui.field('Pitch Strategy', r.pitch_strategy) : '') +
-        SLC.ui.field('Company Overview', r.overview) +
-        SLC.ui.field('Packaged Products', r.products) +
-        SLC.ui.field('Locations', r.locations) +
-        SLC.ui.field('Label Requirements', r.label_requirements) +
-        SLC.ui.field('Suggested Department', r.suggested_department) +
-        SLC.ui.field('Decision Maker', r.decision_maker) +
-        SLC.ui.field('Why Shree Label Creation', r.why_relevant) +
-        '<div class="detail-row"><span class="k">Confidence</span><span class="v">' + SLC.ui.scoreBar(r.confidence_score) + '</span></div>' +
+        (r.recommended_service ? '<div style="background:rgba(124,92,255,0.08);border:1px solid rgba(124,92,255,0.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;">Recommended Service</div><div style="font-weight:700;font-size:13.5px;color:var(--accent2);margin-top:2px;">' + SLC.escape(r.recommended_service) + '</div></div>' : '') +
+        (r.pitch_strategy ? renderIntelCard('Pitch Strategy', r.pitch_strategy, '🎯', 'var(--accent)') : '') +
+        '<div style="font-weight:800;font-size:13.5px;color:var(--text);margin-top:16px;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;">🏭 Packaging Intelligence</div>' +
+        renderIntelCard('Company Overview', r.overview, '📋', '#818cf8') +
+        renderIntelCard('Packaged Products', r.products, '📦', '#fbbf24') +
+        renderIntelCard('Likely Label Requirements', r.label_requirements, '🏷️', '#34d399') +
+        ((r.suggested_department || r.decision_maker) ? 
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+            (r.suggested_department ? '<div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;"><div style="font-size:11px;font-weight:700;color:#60a5fa;margin-bottom:3px;">🏢 Target Dept.</div><div style="font-size:12.5px;font-weight:600;">' + SLC.escape(r.suggested_department) + '</div></div>' : '') +
+            (r.decision_maker ? '<div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;"><div style="font-size:11px;font-weight:700;color:#f472b6;margin-bottom:3px;">👤 Decision Maker</div><div style="font-size:12.5px;font-weight:600;">' + SLC.escape(r.decision_maker) + '</div></div>' : '') +
+          '</div>' : '') +
+        renderIntelCard('Why Shree Label Creation Fits', r.why_relevant, '✨', '#c084fc') +
+        '<div class="detail-row" style="margin-top:14px;"><span class="k">Confidence</span><span class="v">' + SLC.ui.scoreBar(r.confidence_score) + '</span></div>' +
         (outreachHtml ? '<div class="section-title" style="margin-top:16px;">🚀 Sales Outreach Kit</div>' + outreachHtml : '') +
         '<div class="section-title" style="margin-top:16px">Sources (' + src.length + ')</div>' + SLC.ui.sources(src) +
         '<div class="muted" style="margin-top:12px;font-size:11px">Model: ' + SLC.escape(r.model || '—') + '</div>';

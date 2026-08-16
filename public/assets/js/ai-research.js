@@ -14,14 +14,20 @@
     return String(v);
   }
 
-  function fld(label, val, icon) {
+  function renderIntelCard(title, val, icon, accentColor) {
     const str = formatVal(val);
-    if (!str) {
-      return '<div class="detail-row"><span class="k">' + (icon ? icon + ' ' : '') + SLC.escape(label) + '</span><span class="v" style="max-width:100%"><span class="muted">—</span></span></div>';
-    }
+    if (!str) return '';
     const isMultiLine = str.includes('\n');
-    const content = isMultiLine ? '<div style="white-space:pre-line;line-height:1.6;">' + SLC.escape(str) + '</div>' : SLC.escape(str);
-    return '<div class="detail-row"><span class="k">' + (icon ? icon + ' ' : '') + SLC.escape(label) + '</span><span class="v" style="max-width:100%">' + content + '</span></div>';
+    const content = isMultiLine 
+      ? '<div style="white-space:pre-line;line-height:1.7;color:var(--text);font-size:13.5px;">' + SLC.escape(str) + '</div>'
+      : '<div style="line-height:1.7;color:var(--text);font-size:13.5px;">' + SLC.escape(str) + '</div>';
+    
+    return '<div class="intel-block" style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:14px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:' + (accentColor || 'var(--accent2)') + ';margin-bottom:8px;letter-spacing:0.01em;">' +
+        '<span>' + (icon || '📌') + '</span> ' + SLC.escape(title) +
+      '</div>' +
+      content +
+    '</div>';
   }
 
   function copyText(text, btn) {
@@ -233,13 +239,26 @@
         '</div>' : '') +
 
       // Detailed specs
-      '<div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);padding-bottom:6px;">🏭 Packaging & Manufacturing Intelligence</div>' +
-      fld('Company Overview', r.overview, '📋') +
-      fld('Packaged Products', r.products, '📦') +
-      fld('Likely Label Requirements', r.label_requirements, '🏷️') +
-      fld('Target Department', r.suggested_department, '🏢') +
-      fld('Key Decision Maker', r.decision_maker, '👤') +
-      fld('Why Shree Label Creation Fits', r.why_relevant, '✨') +
+      '<div style="font-weight:800;font-size:15px;color:var(--text);margin-top:22px;margin-bottom:14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);padding-bottom:8px;">' +
+        '🏭 Packaging & Manufacturing Intelligence' +
+      '</div>' +
+      renderIntelCard('Company Overview', r.overview, '📋', '#818cf8') +
+      renderIntelCard('Packaged Products', r.products, '📦', '#fbbf24') +
+      renderIntelCard('Likely Label Requirements', r.label_requirements, '🏷️', '#34d399') +
+      ((r.suggested_department || r.decision_maker) ? 
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px;margin-bottom:14px;">' +
+          (r.suggested_department ? 
+            '<div style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">' +
+              '<div style="font-weight:700;font-size:13px;color:#60a5fa;margin-bottom:6px;display:flex;align-items:center;gap:6px;">🏢 Target Department</div>' +
+              '<div style="font-size:13.5px;font-weight:600;color:var(--text);">' + SLC.escape(r.suggested_department) + '</div>' +
+            '</div>' : '') +
+          (r.decision_maker ? 
+            '<div style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">' +
+              '<div style="font-weight:700;font-size:13px;color:#f472b6;margin-bottom:6px;display:flex;align-items:center;gap:6px;">👤 Key Decision Maker</div>' +
+              '<div style="font-size:13.5px;font-weight:600;color:var(--text);">' + SLC.escape(r.decision_maker) + '</div>' +
+            '</div>' : '') +
+        '</div>' : '') +
+      renderIntelCard('Why Shree Label Creation Fits', r.why_relevant, '✨', '#c084fc') +
 
       // Ready to use outreach kit
       '<div style="margin-top:28px;margin-bottom:12px;font-weight:800;font-size:15px;color:var(--text);display:flex;align-items:center;gap:8px;">' +
