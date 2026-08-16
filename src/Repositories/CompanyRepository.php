@@ -165,10 +165,7 @@ class CompanyRepository extends BaseRepository
 
     public function researchReports(int $companyId): array
     {
-        return Database::fetchAll(
-            'SELECT * FROM slc_research_reports WHERE company_id = :c ORDER BY id DESC',
-            ['c' => $companyId]
-        );
+        return (new ResearchRepository())->forCompany($companyId);
     }
 
     /** Lookup for deduplication by normalized name / domain / phone. */

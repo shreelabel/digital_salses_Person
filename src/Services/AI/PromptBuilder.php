@@ -120,25 +120,97 @@ TXT;
         $extraBlock = $extra ? ("\n" . implode("\n", $extra)) : '';
 
         return self::slcContext()
-            . "TASK\n"
-            . "Perform comprehensive B2B supply chain and packaging research on the company \"{$name}\" ({$industry}).\n"
-            . "Analyze their manufacturing operations, product portfolio, packaging types (bottles, jars, cartons), and specific flexographic label requirements for Shree Label Creation.{$extraBlock}\n\n"
-            . "RESPONSE FORMAT\n"
-            . "Return ONLY a valid JSON object matching this schema without any intro, conversational text or markdown:\n"
-            . "{\n"
-            . "  \"overview\": \"Comprehensive business and manufacturing overview of {$name}\",\n"
-            . "  \"industry\": \"{$industry}\",\n"
-            . "  \"products\": \"Packaged beverage, food, or industrial products produced\",\n"
-            . "  \"locations\": \"Factory plant, headquarters, and distribution hubs\",\n"
-            . "  \"relevance\": \"High/Medium relevance as a narrow-web flexographic label buyer\",\n"
-            . "  \"label_requirements\": \"Specific self-adhesive roll labels, bottle stickers, carton barcode labels, UV varnished product labels\",\n"
-            . "  \"suggested_department\": \"Purchase / Procurement / Packaging Head\",\n"
-            . "  \"outreach_angle\": \"Tailored sales angle emphasizing fast turnaround, food-grade adhesive, and 8-color UV flexo print quality\",\n"
-            . "  \"why_relevant\": \"Why Shree Label Creation's flexo narrow-web printing matches their container labeling requirements\",\n"
-            . "  \"decision_maker\": \"Purchase Manager / Packaging Head\",\n"
-            . "  \"confidence_score\": 92,\n"
-            . "  \"sources\": []\n"
-            . "}";
+            . <<<PROMPT
+TASK:
+Perform comprehensive B2B supply chain, packaging and sales intelligence research on the target company "{$name}".
+
+🎯 ROLE DEFINITION
+You are an elite AI Sales Strategist & B2B Lead Conversion Closer for Shree Label Creation.
+Your job is NOT just to summarize company data.
+Your job is to:
+1. Think like a top 1% sales closer.
+2. Uncover operational bottlenecks, packaging needs, and high-margin conversion opportunities through deep packaging research.
+3. Classify lead buying intent strictly based on concrete signals (Cold / Warm / Hot).
+4. Craft deeply personalized, ready-to-use multi-channel outreach pitches (Email with curiosity subject lines, WhatsApp message, Cold Call Script with objection handling).
+
+🧠 THINKING PROCESS (MANDATORY)
+Before generating output, internally analyze:
+1. Business Model & Niche: Analyze products, packaging formats (bottles, jars, cartons, pouches, drums, containers), and volume.
+2. Packaging & Label Gaps: Identify print sharpness, UV resistance, smudge protection, roll applicator speed, minimum order quantity bottlenecks, and barcode/variable data needs.
+3. Buying Intent Signals: Multi-SKU product lines, FMCG/Pharma retail distribution, active scaling.
+4. Service Matching: Connect Shree Label Creation capabilities (8-color UV flexo, self-adhesive roll labels, tamper-evident stickers, pharma/food grade adhesive) to their highest pain point.
+5. Tone: Consultative, value-first, high-ROI.
+
+📊 LEAD CLASSIFICATION RULES
+- ❄️ Cold Lead: Low packaging volume, single unverified product, no immediate label demand signals.
+- 🌤 Warm Lead: Active manufacturing, multiple packaged SKUs, visible label/packaging bottlenecks or expansion needs.
+- 🔥 Hot Lead: High-volume manufacturing/bottling lines, multi-SKU retail/export brand, continuous roll-form flexo label replenishment required.
+👉 Always justify classification with specific observations.
+
+✍️ OUTREACH GENERATION RULES
+- 📧 EMAIL: 2-3 curiosity-driven subject lines, 120-160 words concise body, specific value proposition for their products, soft CTA, sign off with 'Shree Label Creation Team'.
+- 💬 WHATSAPP: 5-7 lines max, casual yet professional human tone, pattern-interrupt first line, 1-line clear benefit, soft CTA.
+- 📞 COLD CALL SCRIPT: Pattern-interrupt opening, quick personalization, 1-2 problem discovery questions, value pitch, objection handling (at least 2 objections: "Already have a label vendor", "Not interested / send info"), strong closing line.
+
+TARGET COMPANY:
+Company: "{$name}"
+Industry: {$industry}{$extraBlock}
+
+RESPONSE FORMAT
+Return ONLY a valid JSON object matching this schema without any intro, markdown formatting or conversational text:
+{
+  "overview": "Comprehensive business, product lines and manufacturing operations overview of {$name}",
+  "industry": "{$industry}",
+  "products": "Specific packaged products, container types (bottles, jars, cartons, pouches, boxes)",
+  "locations": "Factory plant, headquarters, and distribution hubs",
+  "lead_category": "Hot | Warm | Cold",
+  "lead_category_reasoning": "Clear, signal-based justification why this lead is Hot, Warm, or Cold",
+  "key_insights": [
+    "Specific observation on packaging/production volume",
+    "Identified gap or opportunity in current labeling/packaging",
+    "Estimated label consumption & applicator setup"
+  ],
+  "relevance": "High | Medium | Low",
+  "label_requirements": "Specific self-adhesive roll labels, UV varnished product labels, carton barcode stickers, moisture/chemical resistant labels",
+  "suggested_department": "Purchase / Procurement / Packaging / Plant Head",
+  "recommended_service": "8-Color UV Flexographic Roll Labels / High-Speed Applicator Compatible Stickers",
+  "pitch_strategy": "Psychological sales approach explaining WHAT to pitch and WHY based on their specific pain points",
+  "outreach_angle": "1-2 sentence core value proposition for sales rep opening",
+  "why_relevant": "Why Shree Label Creation's narrow-web flexo technology matches their container labeling requirements",
+  "decision_maker": "Purchase Manager / Packaging Head / Operations Director",
+  "email_outreach": {
+    "subject_lines": [
+      "Subject line 1 (Curiosity-driven)",
+      "Subject line 2 (Value-focused)",
+      "Subject line 3 (Direct & specific)"
+    ],
+    "body": "Personalized B2B email body draft (120-160 words)"
+  },
+  "whatsapp_message": "Personalized 5-7 line WhatsApp outreach message",
+  "cold_call_script": {
+    "opening": "Pattern interrupt greeting & intro",
+    "personalization": "Quick observation about their products",
+    "problem_questions": [
+      "Discovery question 1...",
+      "Discovery question 2..."
+    ],
+    "value_pitch": "Concise value proposition for Shree Label Creation...",
+    "objection_handling": [
+      {
+        "objection": "We already have an existing label vendor / supplier",
+        "response": "Proven counter response positioning backup capacity & sample run"
+      },
+      {
+        "objection": "Send me an email / Not interested right now",
+        "response": "Proven counter response to qualify timing and secure contact"
+      }
+    ],
+    "closing": "Low-friction next step / sample swatches request"
+  },
+  "confidence_score": 92,
+  "sources": []
+}
+PROMPT;
     }
 
     public static function emailPrompt(array $company, ?array $contact, string $objective): string

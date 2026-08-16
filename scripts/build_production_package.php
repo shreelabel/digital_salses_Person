@@ -28,6 +28,8 @@ $itemsToCopy = [
     'index.php',
     'login.php',
     'setup.php',
+    'SKILL.md',
+    'README.md',
     'database',
     'src',
     'templates',
